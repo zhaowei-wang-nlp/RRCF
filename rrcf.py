@@ -1,9 +1,10 @@
 import numpy as np
 import heapq
 class RRCF:
-    def __init__(self, tree_num, tree_size):
+    def __init__(self, tree_num, tree_size, top):
         self.tree_size = tree_size
         self.tree_num = tree_num
+        self.top = top
     def fit(self, X):
         self.train_data = X
         self.train_size = len(self.train_data)
@@ -18,14 +19,14 @@ class RRCF:
         self._set_threshold()
     def _set_threshold(self):
         heap = []
-        size = int(0.005 * self.train_size)
+        size = int(self.top * self.train_size)
         for point in self.train_data:
             co_disp = self._get_codisp(point)
             heapq.heappush(heap, co_disp)
             if len(heap) > size:
                 heapq.heappop(heap)
         self.threshold = heapq.heappop(heap)
-        print(int(0.995*self.train_size), self.train_size, self.threshold)
+        print(int((1-self.top) * self.train_size), self.train_size, self.threshold, self.top)
     def _check_anomaly(self, co_disp):
         if co_disp >= self.threshold:
             return 1

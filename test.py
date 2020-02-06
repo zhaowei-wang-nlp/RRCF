@@ -1,10 +1,10 @@
 import os
 from utils import *
 import time
-import json
+from collections import Counter
 from rrcf import RRCF
 from evaluation import label_evaluation
-REPEAT_TIMES = 2
+REPEAT_TIMES = 3
 
 
 def RRCF_test(use_src_dir):
@@ -15,12 +15,12 @@ def RRCF_test(use_src_dir):
     "storage":[0.0]*length, "time":[0.0]*length})
 
     for file in file_list:
-        train_f, train_tag, test_f, test_tag = preprocess(use_src_dir, file)
+        train_f, train_tag, test_f, test_tag = preprocess(use_src_dir, file, 0.6, 0.4)
         print(file+" test begin.")
         for j in range(REPEAT_TIMES):
             print(str(j) + " times test. training ", end="")
             start = time.time()
-            a = RRCF(tree_num = 50, tree_size = 256)
+            a = RRCF(tree_num = 50, tree_size = 256, top = 0.005)
             a.fit(X = train_f)
             print("testing")
             codisp, predict = a.predict(test_f)

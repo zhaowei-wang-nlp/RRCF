@@ -9,7 +9,7 @@ def nomalize_max_min(data:np.ndarray) -> np.ndarray:
                      else 0 if x < min_p else 1 for x in data]) if max_p > min_p \
         else np.array([0.5] * len(data))
 
-def split_data(data:pd.DataFrame, train_size:float = 0.5, test_size = 0.5) -> (np.ndarray, np.ndarray, np.ndarray, np.ndarray):
+def split_data(features: np.ndarray, tag: np.ndarray, train_size:float = 0.5, test_size = 0.5) -> (np.ndarray, np.ndarray, np.ndarray, np.ndarray):
     """
     Args:
         data: 要划分的数据
@@ -17,13 +17,10 @@ def split_data(data:pd.DataFrame, train_size:float = 0.5, test_size = 0.5) -> (n
         test_size: 测试数据的大小，从下标-1向前。 data[-int(len(data)*train_size:]
     Returns: 切分后的数据和标签
     """
-    length = len(data["value"])
-    data["value"] = nomalize_max_min(data["value"].values)
-    train = data["value"].values[:int(length*train_size)]
-    test = data["value"].values[-int(length*test_size):]
-    train_tag = data["anomaly"].values[:int(length*train_size)]
-    test_tag = data["anomaly"].values[-int(length*test_size):]
-    return train, test, train_tag, test_tag
+    length = len(tag)
+    train, test = features[:int(length*train_size)], features[-int(length*test_size):]
+    train_tag, test_tag = tag[:int(length*train_size)], tag[-int(length*test_size):]
+    return train, train_tag, test, test_tag
 
 
 def extract_WMA(data_series, window_size):
@@ -41,11 +38,12 @@ def extract_features(data:np.ndarray, tag:np.ndarray = None)->(np.ndarray, np.nd
     features.append(s.diff(periods = 10080).values)
     features.append(s.rolling(window = 60).mean().values)
     features.append(s.rolling(window = 60).median().values)
-    features.append(s.rolling(window=60).sum().values)
-    features.append(extract_WMA(data, 60))
-    features.append(s.ewm(span=60,adjust=False).mean().values)
+    features.append(s.rolling(window=60).sum().values / 60)
+    #features.append(extract_WMA(data, 60))
+    #features.append(s.ewm(span=60,adjust=False).mean().values)
     tag = tag[10080:] if tag is not None else None
     features = np.array(features)[:, 10080:]
+    print("特征个数" + str(len(features)))
     return features.T, tag
 
 def get_size(obj, seen=None):
@@ -89,7 +87,6 @@ def re_construct(data):
 def preprocess(use_src_dir:str, file:str, train_size :float = 0.5, test_size = 0.5) -> (np.ndarray, np.ndarray, np.ndarray, np.ndarray):
     data = pd.read_csv(use_src_dir + file)
     data = re_construct(data)
-    train, test, train_tag, test_tag = split_data(data, train_size, test_size)
-    train_f, train_tag = extract_features(train, train_tag)
-    test_f, test_tag = extract_features(test, test_tag)
-    return train_f, train_tag, test_f, test_tag
+    features, tag = extract_features(data["value"].values, data["anomaly"].values)
+    train, train_tag, test, test_tag = split_data(features, tag, train_size, test_size)
+    return train, train_tag, test, test_tag
