@@ -35,10 +35,10 @@ def extract_WMA(data_series, window_size):
 def extract_features(data:np.ndarray, tag:np.ndarray = None)->(np.ndarray, np.ndarray):
     s = pd.Series(data)
     features = [data]
-    features.append(s.diff(periods = 10080).values)
-    features.append(s.rolling(window = 60).mean().values)
-    features.append(s.rolling(window = 60).median().values)
-    features.append(s.rolling(window=60).sum().values / 60)
+    #features.append(s.diff(periods = 10080).values)
+    #features.append(s.rolling(window = 60).mean().values)
+    #features.append(s.rolling(window = 60).median().values)
+    #features.append(s.rolling(window=60).sum().values / 60)
     #features.append(extract_WMA(data, 60))
     #features.append(s.ewm(span=60,adjust=False).mean().values)
     tag = tag[10080:] if tag is not None else None

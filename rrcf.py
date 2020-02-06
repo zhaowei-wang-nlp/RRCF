@@ -190,12 +190,34 @@ class RCTree:
         print_tree(self.root)
         return treestr
 
+
+    def _maximum_gap(self, X, S):
+        """
+        :param X: all data points
+        :param S: tags to indicate which point is in set S
+        :return: the maximun_gap in set S
+        """
+        if len(X) == 0:
+            return None
+        max_gap = np.array([0.0] * len(X[0]))
+        nums = X[S]
+        for j in range(len(X[0])):
+            cur = sorted(nums[:, j])
+            pre = None
+            for i in range(len(cur)):
+                if pre is not None:
+                    max_gap[j] = max(max_gap[j], np.abs(cur[i] - pre))
+                pre = cur[i]
+        return max_gap
+
+
     def _cut(self, X, S, parent=None, side='l'):
         # Find max and min over all d dimensions
         xmax = X[S].max(axis=0)
         xmin = X[S].min(axis=0)
+        max_gap = self._maximum_gap(X, S)
         # Compute l
-        l = xmax - xmin
+        l = (xmax - xmin) + max_gap
         l /= l.sum()
         # Determine dimension to cut
         q = self.rng.choice(self.ndim, p=l)

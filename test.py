@@ -4,7 +4,7 @@ import time
 from collections import Counter
 from rrcf import RRCF
 from evaluation import label_evaluation
-REPEAT_TIMES = 3
+REPEAT_TIMES = 5
 
 
 def RRCF_test(use_src_dir):
@@ -36,10 +36,11 @@ def RRCF_test(use_src_dir):
             perform.loc[file_dict[file], "recall"] += data["recall"]
             print(data)
         perform.iloc[file_dict[file], 1:] /= REPEAT_TIMES
-    perform.to_csv("performance-fs.csv", index = False)
+        break# TODO remember to delete this point
+    perform.to_csv("performance.csv", index = False)
 
 
 if __name__ == "__main__":
-    use_src_dir = sys.argv[2] if len(sys.argv) > 2 else "./single-data/"
+    use_src_dir = sys.argv[2] if len(sys.argv) > 2 else "../single-data/"
     RRCF_test(use_src_dir)
 
