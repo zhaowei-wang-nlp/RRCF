@@ -9,7 +9,7 @@ class RRCF:
     def fit(self, X):
         self.train_data = X
         self.train_size = len(self.train_data)
-        self.sample_pool = np.array([i for i in range(self.train_size)])
+        self.sample_pool = [i for i in range(self.train_size)]
         self.forest = []
         batch_size = self.train_size // self.tree_size
         while len(self.forest) < self.tree_num:
@@ -33,6 +33,15 @@ class RRCF:
             return 1
         else:
             return 0
+    def _update(self, point, index):
+        # TODO delete a point randomly to maintain the size of the tree?
+        forget_index = np.random.choice(self.sample_pool)
+        self.sample_pool.remove(forget_index)
+        self.sample_pool.append(index)
+        for tree in self.forest:
+            if forget_index in tree.leaves:
+                tree.forget_point(forget_index)
+                tree.insert_point(point, index)
     def _get_codisp(self, point):
         co_disp = 0
         for i in range(self.tree_num):
@@ -45,6 +54,9 @@ class RRCF:
         for i in range(len(X)):
             co_disp = self._get_codisp(X[i])
             tag = self._check_anomaly(co_disp)
+            index = i + self.train_size
+            if tag:
+                self._update(X[i], index)
             (score.append(co_disp), Y.append(tag)) if codisp else Y.append(tag)
         return np.array(score), np.array(Y)
 
@@ -259,7 +271,7 @@ class RCTree:
         # Determine dimension to cut
         q = self.rng.choice(self.ndim, p=l)
         # Determine value for split
-        p = self._density_cut(X[:, q], S, 20, xmax[q], xmin[q])
+        p = self.rng.uniform(xmin[q], xmax[q])
         # Determine subset of points to left
         S1 = (X[:, q] <= p) & (S)
         # Determine subset of points to right
