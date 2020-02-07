@@ -210,12 +210,28 @@ class RCTree:
                 pre = cur[i]
         return max_gap
 
-
+    def _variance(self, X, S, xmax, xmin):
+        if len(X) == 0:
+            return None
+        var = np.array([0.0] * len(X[0]))
+        nums = X[S]
+        for j in range(len(nums[0])):
+            count = [0.0] * 50
+            max, min = xmax[j], xmin[j]
+            l = (max-min) / 50
+            for i in range(len(nums)):
+                if nums[i, j] < max:
+                    count[int((nums[i, j]-min)/l)] += 1
+                else:
+                    count[-1] += 1
+            var[j] = np.var(count)
+        return var
     def _cut(self, X, S, parent=None, side='l'):
         # Find max and min over all d dimensions
         xmax = X[S].max(axis=0)
         xmin = X[S].min(axis=0)
         max_gap = self._maximum_gap(X, S)
+        #var = self._variance(X, S, xmax, xmin)
         # Compute l
         l = (xmax - xmin) + max_gap
         l /= l.sum()

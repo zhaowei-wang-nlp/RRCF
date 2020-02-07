@@ -17,10 +17,13 @@ def RRCF_test(use_src_dir):
     for file in file_list:
         train_f, train_tag, test_f, test_tag = preprocess(use_src_dir, file, 0.6, 0.4)
         print(file+" test begin.")
+        file_perform = pd.DataFrame({"times":list(range(REPEAT_TIMES)), "recall": [0.0]*REPEAT_TIMES,
+        "precision":[0.0]*REPEAT_TIMES, "F1-score":[0.0]*REPEAT_TIMES,
+                                     "storage":[0.0]*REPEAT_TIMES, "time":[0.0]*REPEAT_TIMES})
         for j in range(REPEAT_TIMES):
             print(str(j) + " times test. training ", end="")
             start = time.time()
-            a = RRCF(tree_num = 50, tree_size = 256, top = 0.005)
+            a = RRCF(tree_num = 70, tree_size = 1024, top = 0.002)
             a.fit(X = train_f)
             print("testing")
             codisp, predict = a.predict(test_f)
@@ -28,14 +31,15 @@ def RRCF_test(use_src_dir):
             #score_data.to_csv("anomaly_score.csv", index=False)
             #print(123), exit()
             end = time.time()
-            perform.loc[file_dict[file], "time"] += end - start
-            perform.loc[file_dict[file], "storage"] += get_size(a)
+            file_perform.loc[j, "time"] += end - start
+            file_perform.loc[j, "storage"] += get_size(a)
             data = label_evaluation(predict, test_tag)
-            perform.loc[file_dict[file], "F1-score"] += data["F1-score"]
-            perform.loc[file_dict[file], "precision"] += data["precision"]
-            perform.loc[file_dict[file], "recall"] += data["recall"]
+            file_perform.loc[j, "F1-score"] += data["F1-score"]
+            file_perform.loc[j, "precision"] += data["precision"]
+            file_perform.loc[j, "recall"] += data["recall"]
             print(data)
-        perform.iloc[file_dict[file], 1:] /= REPEAT_TIMES
+        perform.iloc[file_dict[file], 1:] = file_perform.iloc[:, 1:].sum()/REPEAT_TIMES
+        file_perform.to_csv(file, index = False)
         break# TODO remember to delete this point
     perform.to_csv("performance.csv", index = False)
 
