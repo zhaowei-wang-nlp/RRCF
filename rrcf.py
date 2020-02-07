@@ -250,12 +250,12 @@ class RCTree:
         # Find max and min over all d dimensions
         xmax = X[S].max(axis=0)
         xmin = X[S].min(axis=0)
-        #max_gap = self._maximum_gap(X, S)
-        v = self._compute_variance(X, S)
+        max_gap = self._maximum_gap(X, S)
+        #v = self._compute_variance(X, S)
         # Compute l
         l = (xmax - xmin)
         l /= l.sum()
-        l = (l + v) / 2
+        l = (l + max_gap) / 2
         # Determine dimension to cut
         q = self.rng.choice(self.ndim, p=l)
         # Determine value for split
