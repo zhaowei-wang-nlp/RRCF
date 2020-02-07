@@ -13,7 +13,7 @@ def RRCF_test(use_src_dir):
     file_dict = {file_list[i]:i for i in range(length)}
     perform = pd.DataFrame({"file": file_list, "recall": [0.0]*length, "precision":[0.0]*length, "F1-score":[0.0]*length,
     "storage":[0.0]*length, "time":[0.0]*length})
-
+    print("var")
     for file in file_list:
         train_f, train_tag, test_f, test_tag = preprocess(use_src_dir, file, 0.6, 0.4)
         print(file+" test begin.")
@@ -23,7 +23,7 @@ def RRCF_test(use_src_dir):
         for j in range(REPEAT_TIMES):
             print(str(j) + " times test. training ", end="")
             start = time.time()
-            a = RRCF(tree_num = 70, tree_size = 1024, top = 0.002)
+            a = RRCF(tree_num = 70, tree_size = 1024, top = 0.006)
             a.fit(X = train_f)
             print("testing")
             codisp, predict = a.predict(test_f)
@@ -39,9 +39,9 @@ def RRCF_test(use_src_dir):
             file_perform.loc[j, "recall"] += data["recall"]
             print(data)
         perform.iloc[file_dict[file], 1:] = file_perform.iloc[:, 1:].sum()/REPEAT_TIMES
-        file_perform.to_csv(file, index = False)
+        file_perform.to_csv("var-"+file, index = False)
         break# TODO remember to delete this point
-    perform.to_csv("performance.csv", index = False)
+    perform.to_csv("performance-var.csv", index = False)
 
 
 if __name__ == "__main__":

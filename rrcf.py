@@ -1,5 +1,6 @@
 import numpy as np
 import heapq
+from collections import Counter
 class RRCF:
     def __init__(self, tree_num, tree_size, top):
         self.tree_size = tree_size
@@ -208,33 +209,53 @@ class RCTree:
                 if pre is not None:
                     max_gap[j] = max(max_gap[j], np.abs(cur[i] - pre))
                 pre = cur[i]
-        return max_gap
+        return max_gap/max_gap.sum()
 
-    def _variance(self, X, S, xmax, xmin):
+    def _compute_variance(self, X, S):
         if len(X) == 0:
             return None
-        var = np.array([0.0] * len(X[0]))
+        v = np.array([0.0] * len(X[0]))
         nums = X[S]
         for j in range(len(nums[0])):
-            count = [0.0] * 50
-            max, min = xmax[j], xmin[j]
-            l = (max-min) / 50
-            for i in range(len(nums)):
-                if nums[i, j] < max:
-                    count[int((nums[i, j]-min)/l)] += 1
-                else:
-                    count[-1] += 1
-            var[j] = np.var(count)
-        return var
+            v[j] = np.var(nums[:, j])
+        return v/v.sum()
+
+    def _density_cut(self, q, S, N, max = None, min = None):
+        """
+        :param q: the dimension q of all data points
+        :param S: the set S
+        :param N: split the range of the set S into N intervals
+        :return: a cut
+        """
+        nums = q[S]
+        if not len(nums):
+            return None
+        if max is None:
+            max = nums.max()
+        if min is None:
+            min = nums.min()
+        counts, interval = np.array([0.0] * N), (max - min) / N
+        for n in nums:
+            index = int((n - min) // interval)
+            index = index - 1 if index == N else index # n等于max的时候，index要减一
+            counts[index] += 1
+        max_count = counts.max()
+        density = np.array([max_count - n + 1 for n in counts])#对max_count - n + 1进行归一化
+        density /= density.sum()
+        i = self.rng.choice(N, p = density)
+        base = min + i * interval
+        return self.rng.uniform(base, base + interval)
+    
     def _cut(self, X, S, parent=None, side='l'):
         # Find max and min over all d dimensions
         xmax = X[S].max(axis=0)
         xmin = X[S].min(axis=0)
-        max_gap = self._maximum_gap(X, S)
-        #var = self._variance(X, S, xmax, xmin)
+        #max_gap = self._maximum_gap(X, S)
+        v = self._compute_variance(X, S)
         # Compute l
-        l = (xmax - xmin) + max_gap
+        l = (xmax - xmin)
         l /= l.sum()
+        l = (l + v) / 2
         # Determine dimension to cut
         q = self.rng.choice(self.ndim, p=l)
         # Determine value for split
