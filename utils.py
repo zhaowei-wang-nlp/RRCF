@@ -3,6 +3,9 @@ import pandas as pd
 import sys
 import inspect
 from collections import Counter
+import setting as st
+from tsfresh import extract_relevant_features
+
 def nomalize_max_min(data:np.ndarray) -> np.ndarray:
     max_p, min_p = data.max(), data.min()
     return np.array([(x-min_p) / (max_p-min_p) if min_p <= x <= max_p
@@ -32,12 +35,46 @@ def extract_WMA(data_series, window_size):
     return result
 
 
+def kurtosis(x, window):
+    if not isinstance(x, pd.Series):
+        x = pd.Series(x)
+
+    res = np.zeros(x.size)
+
+    for i in range(x.size):
+        if i < window - 1:
+            res[i] = np.nan
+        else:
+            rolling = x[i - window + 1: i + 1]
+            res[i] = pd.Series.kurtosis(rolling)
+
+    return res
+
+def skewness(x, window):
+    if not isinstance(x, pd.Series):
+        x = pd.Series(x)
+
+    res = np.zeros(x.size)
+
+    for i in range(x.size):
+        if i < window - 1:
+            res[i] = np.nan
+        else:
+            rolling = x[i - window + 1: i + 1]
+            res[i] = pd.Series.skew(rolling)
+
+    return res
+
 def extract_features(data:np.ndarray, tag:np.ndarray = None)->(np.ndarray, np.ndarray):
     s = pd.Series(data)
     features = [data]
     features.append(s.rolling(window = 60).mean().values)
     features.append(s.rolling(window = 60).median().values)
-    features.append(s.rolling(window=60).sum().values / 60)
+    features.append(s.rolling(window = 60).sum().values / 60)
+    # TODO changes tag
+    if st.TS_FRESH:
+        features.append(kurtosis(s, window = 60))
+        features.append(skewness(s, window = 60))
     #features.append(s.diff(periods = 10080).values)
     #features.append(extract_WMA(data, 60))
     #features.append(s.ewm(span=60,adjust=False).mean().values)

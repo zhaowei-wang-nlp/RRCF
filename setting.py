@@ -1,0 +1,4 @@
+FEATURE_SELECT = False
+CUT_SELECT = False
+UPDATE_ANOMALY = False
+TS_FRESH = True

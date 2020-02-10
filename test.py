@@ -13,7 +13,7 @@ def RRCF_test(use_src_dir):
     file_dict = {file_list[i]:i for i in range(length)}
     perform = pd.DataFrame({"file": file_list, "recall": [0.0]*length, "precision":[0.0]*length, "F1-score":[0.0]*length,
     "storage":[0.0]*length, "time":[0.0]*length})
-    print("update_anomaly")
+    print("tsfresh")
     for file in file_list:
         train_f, train_tag, test_f, test_tag = preprocess(use_src_dir, file, 0.6, 0.4)
         print(file+" test begin.")
@@ -39,9 +39,9 @@ def RRCF_test(use_src_dir):
             file_perform.loc[j, "recall"] += data["recall"]
             print(data)
         perform.iloc[file_dict[file], 1:] = file_perform.iloc[:, 1:].sum()/REPEAT_TIMES
-        file_perform.to_csv("update-"+file, index = False)
-        break# TODO remember to delete this point
-    perform.to_csv("performance-update.csv", index = False)
+        file_perform.to_csv("tsfresh-"+file, index = False)
+        break # TODO delete
+    perform.to_csv("performance-tsfresh.csv", index = False)
 
 
 if __name__ == "__main__":

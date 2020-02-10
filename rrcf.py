@@ -1,6 +1,7 @@
 import numpy as np
 import heapq
 from collections import Counter
+import setting as st
 class RRCF:
     def __init__(self, tree_num, tree_size, top):
         self.tree_size = tree_size
@@ -55,7 +56,8 @@ class RRCF:
             co_disp = self._get_codisp(X[i])
             tag = self._check_anomaly(co_disp)
             index = i + self.train_size
-            if tag:
+            # TODO changes tag
+            if st.UPDATE_ANOMALY and tag:
                 self._update(X[i], index)
             (score.append(co_disp), Y.append(tag)) if codisp else Y.append(tag)
         return np.array(score), np.array(Y)
@@ -262,16 +264,24 @@ class RCTree:
         # Find max and min over all d dimensions
         xmax = X[S].max(axis=0)
         xmin = X[S].min(axis=0)
-        #max_gap = self._maximum_gap(X, S)
-        #v = self._compute_variance(X, S)
+
         # Compute l
         l = (xmax - xmin)
+        # TODO changes tag
+        if st.FEATURE_SELECT:
+            max_gap = self._maximum_gap(X, S)
+            #v = self._compute_variance(X, S)
+            l = (l + max_gap) / 2
         l /= l.sum()
-        #l = (l + max_gap) / 2
+
         # Determine dimension to cut
         q = self.rng.choice(self.ndim, p=l)
         # Determine value for split
-        p = self.rng.uniform(xmin[q], xmax[q])
+        # TODO changes tag
+        if st.CUT_SELECT:
+            p = self._density_cut(X[:, q], S, 20, xmax[q], xmin[q])
+        else:
+            p = self.rng.uniform(xmin[q], xmax[q])
         # Determine subset of points to left
         S1 = (X[:, q] <= p) & (S)
         # Determine subset of points to right
