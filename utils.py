@@ -2,10 +2,30 @@ import numpy as np
 import pandas as pd
 import sys
 import inspect
-from collections import Counter
 import setting as st
-from tsfresh import extract_relevant_features
+import matplotlib.pyplot as plt
 DEL_HEAD = 10080
+
+
+def plot_points(file, result, update):
+    data = pd.read_csv(file)
+    r = pd.read_csv(result)
+
+    data.index = data["timestamp"]
+    data = data.loc[r["timestamp"][0]: , : ]
+    data.index = range(len(data))
+
+    data["time"] = pd.to_datetime(data["timestamp"], unit='s')
+
+    plt.plot(data["time"].values, data["value"].values)
+    plt.scatter(data[ data["anomaly"] == 1 ]["time"], data[ data["anomaly"] == 1 ]["value"], c = "red", s = 110, label = "True Anomalies")
+
+    plt.scatter(data[r["anomaly"] == 1]["time"], data[r["anomaly"] == 1]["value"], c = "black", s = 30, label = "our solution")
+    plt.legend()
+    plt.savefig("pic\\" + file.split("\\")[-1] + "-" + update + ".jpg")
+    plt.show()
+
+
 def nomalize_max_min(data:np.ndarray) -> np.ndarray:
     max_p, min_p = data.max(), data.min()
     return np.array([(x-min_p) / (max_p-min_p) if min_p <= x <= max_p
