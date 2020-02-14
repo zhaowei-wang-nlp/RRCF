@@ -3,15 +3,14 @@
   <component name="ChangeListManager">
     <list default="true" id="8a1950fc-ad8c-4de9-ae82-30529eade3ba" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cut-rplp-10.0.210.32.csv" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/performance-cut.csv" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/performance-gap.csv" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/performance-var.csv" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/rplp-10.0.210.32-gap.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plot.py" beforeDir="false" afterPath="$PROJECT_DIR$/plot.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/result/rplp-10.0.210.32-gap.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/result/update-rspt-10.0.210.32.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/result/update-sucp-10.0.210.32.csv" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/rrcf.py" beforeDir="false" afterPath="$PROJECT_DIR$/rrcf.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/setting.py" beforeDir="false" afterPath="$PROJECT_DIR$/setting.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/test.py" beforeDir="false" afterPath="$PROJECT_DIR$/test.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/var-rplp-10.0.210.32.csv" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -39,9 +38,51 @@
   <component name="PropertiesComponent">
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../rrcf-pro" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../rrcf-pro/test.py" />
   </component>
-  <component name="RunManager" selected="Python.test">
+  <component name="RunManager" selected="Python.plot">
+    <configuration name="addlabels" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="rrcf-master" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="D:/123/data" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="D:/123/data/addlabels.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="gen_singal_kpi" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="rrcf-master" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/.." />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/../gen_singal_kpi.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="plot" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="rrcf-master" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -87,11 +128,15 @@
     <list>
       <item itemvalue="Python.plot" />
       <item itemvalue="Python.test" />
+      <item itemvalue="Python.addlabels" />
+      <item itemvalue="Python.gen_singal_kpi" />
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.test" />
         <item itemvalue="Python.plot" />
+        <item itemvalue="Python.test" />
+        <item itemvalue="Python.gen_singal_kpi" />
+        <item itemvalue="Python.addlabels" />
       </list>
     </recent_temporary>
   </component>
@@ -113,49 +158,53 @@
       <screen x="0" y="0" width="1536" height="824" />
     </state>
     <state x="223" y="68" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.1536.824@0.0.1536.824" timestamp="1581044336035" />
-    <state x="549" y="168" key="FileChooserDialogImpl" timestamp="1581043695721">
+    <state x="549" y="168" key="FileChooserDialogImpl" timestamp="1581662529791">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state x="549" y="168" key="FileChooserDialogImpl/0.0.1536.824@0.0.1536.824" timestamp="1581043695721" />
-    <state width="1500" height="202" key="GridCell.Tab.0.bottom" timestamp="1581322045987">
+    <state x="549" y="168" key="FileChooserDialogImpl/0.0.1536.824@0.0.1536.824" timestamp="1581662529791" />
+    <state width="1515" height="196" key="GridCell.Tab.0.bottom" timestamp="1581612342107">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="1500" height="202" key="GridCell.Tab.0.bottom/0.0.1536.824@0.0.1536.824" timestamp="1581322045987" />
-    <state width="1500" height="202" key="GridCell.Tab.0.center" timestamp="1581322045987">
+    <state width="1515" height="196" key="GridCell.Tab.0.bottom/0.0.1536.824@0.0.1536.824" timestamp="1581612342107" />
+    <state width="1515" height="196" key="GridCell.Tab.0.center" timestamp="1581612342107">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="1500" height="202" key="GridCell.Tab.0.center/0.0.1536.824@0.0.1536.824" timestamp="1581322045987" />
-    <state width="1500" height="202" key="GridCell.Tab.0.left" timestamp="1581322045987">
+    <state width="1515" height="196" key="GridCell.Tab.0.center/0.0.1536.824@0.0.1536.824" timestamp="1581612342107" />
+    <state width="1515" height="196" key="GridCell.Tab.0.left" timestamp="1581612342107">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="1500" height="202" key="GridCell.Tab.0.left/0.0.1536.824@0.0.1536.824" timestamp="1581322045987" />
-    <state width="1500" height="202" key="GridCell.Tab.0.right" timestamp="1581322045987">
+    <state width="1515" height="196" key="GridCell.Tab.0.left/0.0.1536.824@0.0.1536.824" timestamp="1581612342107" />
+    <state width="1515" height="196" key="GridCell.Tab.0.right" timestamp="1581612342107">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="1500" height="202" key="GridCell.Tab.0.right/0.0.1536.824@0.0.1536.824" timestamp="1581322045987" />
-    <state width="1500" height="258" key="GridCell.Tab.1.bottom" timestamp="1581321997294">
+    <state width="1515" height="196" key="GridCell.Tab.0.right/0.0.1536.824@0.0.1536.824" timestamp="1581612342107" />
+    <state width="1515" height="247" key="GridCell.Tab.1.bottom" timestamp="1581609337504">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="1500" height="258" key="GridCell.Tab.1.bottom/0.0.1536.824@0.0.1536.824" timestamp="1581321997294" />
-    <state width="1500" height="258" key="GridCell.Tab.1.center" timestamp="1581321997294">
+    <state width="1515" height="247" key="GridCell.Tab.1.bottom/0.0.1536.824@0.0.1536.824" timestamp="1581609337504" />
+    <state width="1515" height="247" key="GridCell.Tab.1.center" timestamp="1581609337503">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="1500" height="258" key="GridCell.Tab.1.center/0.0.1536.824@0.0.1536.824" timestamp="1581321997294" />
-    <state width="1500" height="258" key="GridCell.Tab.1.left" timestamp="1581321997294">
+    <state width="1515" height="247" key="GridCell.Tab.1.center/0.0.1536.824@0.0.1536.824" timestamp="1581609337503" />
+    <state width="1515" height="247" key="GridCell.Tab.1.left" timestamp="1581609337503">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="1500" height="258" key="GridCell.Tab.1.left/0.0.1536.824@0.0.1536.824" timestamp="1581321997294" />
-    <state width="1500" height="258" key="GridCell.Tab.1.right" timestamp="1581321997294">
+    <state width="1515" height="247" key="GridCell.Tab.1.left/0.0.1536.824@0.0.1536.824" timestamp="1581609337503" />
+    <state width="1515" height="247" key="GridCell.Tab.1.right" timestamp="1581609337504">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="1500" height="258" key="GridCell.Tab.1.right/0.0.1536.824@0.0.1536.824" timestamp="1581321997294" />
-    <state x="449" y="237" key="com.intellij.ide.util.TipDialog" timestamp="1581043592468">
+    <state width="1515" height="247" key="GridCell.Tab.1.right/0.0.1536.824@0.0.1536.824" timestamp="1581609337504" />
+    <state x="449" y="237" key="com.intellij.ide.util.TipDialog" timestamp="1581609984613">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state x="449" y="237" key="com.intellij.ide.util.TipDialog/0.0.1536.824@0.0.1536.824" timestamp="1581043592468" />
-    <state x="431" y="145" width="672" height="678" key="search.everywhere.popup" timestamp="1581072345194">
+    <state x="449" y="237" key="com.intellij.ide.util.TipDialog/0.0.1536.824@0.0.1536.824" timestamp="1581609984613" />
+    <state x="333" y="149" key="com.intellij.xdebugger.impl.breakpoints.ui.BreakpointsDialogFactory$2" timestamp="1581598888293">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state x="431" y="145" width="672" height="678" key="search.everywhere.popup/0.0.1536.824@0.0.1536.824" timestamp="1581072345194" />
+    <state x="333" y="149" key="com.intellij.xdebugger.impl.breakpoints.ui.BreakpointsDialogFactory$2/0.0.1536.824@0.0.1536.824" timestamp="1581598888293" />
+    <state x="431" y="146" width="672" height="678" key="search.everywhere.popup" timestamp="1581662286711">
+      <screen x="0" y="0" width="1536" height="824" />
+    </state>
+    <state x="431" y="146" width="672" height="678" key="search.everywhere.popup/0.0.1536.824@0.0.1536.824" timestamp="1581662286711" />
   </component>
 </project>

@@ -5,14 +5,14 @@ import inspect
 from collections import Counter
 import setting as st
 from tsfresh import extract_relevant_features
-
+DEL_HEAD = 10080
 def nomalize_max_min(data:np.ndarray) -> np.ndarray:
     max_p, min_p = data.max(), data.min()
     return np.array([(x-min_p) / (max_p-min_p) if min_p <= x <= max_p
                      else 0 if x < min_p else 1 for x in data]) if max_p > min_p \
         else np.array([0.5] * len(data))
 
-def split_data(features: np.ndarray, tag: np.ndarray, train_size:float = 0.5, test_size = 0.5) -> (np.ndarray, np.ndarray, np.ndarray, np.ndarray):
+def split_data(contain: np.ndarray, train_size:float = 0.5, test_size = 0.5) -> (np.ndarray, np.ndarray, np.ndarray, np.ndarray):
     """
     Args:
         data: 要划分的数据
@@ -20,10 +20,9 @@ def split_data(features: np.ndarray, tag: np.ndarray, train_size:float = 0.5, te
         test_size: 测试数据的大小，从下标-1向前。 data[-int(len(data)*train_size:]
     Returns: 切分后的数据和标签
     """
-    length = len(tag)
-    train, test = features[:int(length*train_size)], features[-int(length*test_size):]
-    train_tag, test_tag = tag[:int(length*train_size)], tag[-int(length*test_size):]
-    return train, train_tag, test, test_tag
+    length = len(contain)
+    train, test = contain[:int(length*train_size)], contain[-int(length*test_size):]
+    return train, test
 
 
 def extract_WMA(data_series, window_size):
@@ -78,8 +77,8 @@ def extract_features(data:np.ndarray, tag:np.ndarray = None)->(np.ndarray, np.nd
     #features.append(s.diff(periods = 10080).values)
     #features.append(extract_WMA(data, 60))
     #features.append(s.ewm(span=60,adjust=False).mean().values)
-    tag = tag[60:] if tag is not None else None
-    features = np.array(features)[:, 60:]
+    tag = tag[DEL_HEAD:] if tag is not None else None
+    features = np.array(features)[:, DEL_HEAD:]
     print("特征个数" + str(len(features)))
     return features.T, tag
 
@@ -123,7 +122,10 @@ def re_construct(data):
     return full_data
 def preprocess(use_src_dir:str, file:str, train_size :float = 0.5, test_size = 0.5) -> (np.ndarray, np.ndarray, np.ndarray, np.ndarray):
     data = pd.read_csv(use_src_dir + file)
-    data = re_construct(data)
+    #data = re_construct(data)
     features, tag = extract_features(data["value"].values, data["anomaly"].values)
-    train, train_tag, test, test_tag = split_data(features, tag, train_size, test_size)
-    return train, train_tag, test, test_tag
+    time = data["timestamp"].values[DEL_HEAD: ]
+    train_f, test_f = split_data(features, train_size, test_size)
+    train_tag, test_tag = split_data(tag, train_size, test_size)
+    train_time, test_time = split_data(time, train_size, test_size)
+    return train_f, train_tag, train_time, test_f, test_tag, test_time

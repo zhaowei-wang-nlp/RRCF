@@ -19,9 +19,11 @@ class RRCF:
             trees = [RCTree(self.train_data[ix], index_labels= ix) for ix in ixs]
             self.forest.extend(trees)
         self._set_threshold()
+
+
     def _set_threshold(self):
         heap = []
-        size = int(self.top * self.train_size)
+        size = int(self.top * self.train_size) or 1
         for point in self.train_data:
             co_disp = self._get_codisp(point)
             heapq.heappush(heap, co_disp)
@@ -29,6 +31,7 @@ class RRCF:
                 heapq.heappop(heap)
         self.threshold = heapq.heappop(heap)
         print(int((1-self.top) * self.train_size), self.train_size, self.threshold, self.top)
+
     def _check_anomaly(self, co_disp):
         if co_disp >= self.threshold:
             return 1
@@ -57,7 +60,7 @@ class RRCF:
             tag = self._check_anomaly(co_disp)
             index = i + self.train_size
             # TODO changes tag
-            if st.UPDATE_ANOMALY and tag:
+            if st.UPDATE_ANOMALY and tag or st.UPDATE_ALL:
                 self._update(X[i], index)
             (score.append(co_disp), Y.append(tag)) if codisp else Y.append(tag)
         return np.array(score), np.array(Y)
