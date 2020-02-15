@@ -2,13 +2,20 @@ import numpy as np
 import heapq
 from collections import Counter
 import setting as st
+import pandas as pd
+import json
 class RRCF:
     def __init__(self, tree_num, tree_size, top):
         self.tree_size = tree_size
         self.tree_num = tree_num
         self.top = top
+        self.weight = [1.0] * self.tree_num
     def fit(self, X):
         self.train_data = X
+        # TODO 标签函数签名，现在没有标签更新所以用
+        # def fit(self, X, y, timestamp):
+        # self.y = y
+        # self.timestamp = timestamp
         self.train_size = len(self.train_data)
         self.sample_pool = [i for i in range(self.train_size)]
         self.forest = []
@@ -22,15 +29,25 @@ class RRCF:
 
 
     def _set_threshold(self):
-        heap = []
-        size = int(self.top * self.train_size) or 1
-        for point in self.train_data:
-            co_disp = self._get_codisp(point)
-            heapq.heappush(heap, co_disp)
-            if len(heap) > size:
-                heapq.heappop(heap)
-        self.threshold = heapq.heappop(heap)
-        print(int((1-self.top) * self.train_size), self.train_size, self.threshold, self.top)
+        if self.top:
+            heap = []
+            size = int(self.top * self.train_size) or 1
+            for point in self.train_data:
+                co_disp = self._get_codisp(point)
+                heapq.heappush(heap, co_disp)
+                if len(heap) > size:
+                    heapq.heappop(heap)
+            self.threshold = heapq.heappop(heap)
+            print(int((1-self.top) * self.train_size), self.train_size, self.threshold, self.top)
+        else:
+            co_disps = np.zeros(self.train_size)
+            for i in range(self.train_size):
+                co_disps[i] = self._get_codisp(self.train_data[i])
+            mean = np.mean(co_disps)
+            std = np.std(co_disps)
+            self.threshold = mean + 7 * std
+            print(self.train_size, self.threshold, mean, std)
+
 
     def _check_anomaly(self, co_disp):
         if co_disp >= self.threshold:
@@ -51,8 +68,59 @@ class RRCF:
         for i in range(self.tree_num):
             tree = self.forest[i]
             nearest_leaf = tree.query(point)
-            co_disp += tree.codisp(nearest_leaf)
+            co_disp += tree.codisp(nearest_leaf) * self.weight[i]
         return co_disp
+
+    def select_points_top(self, file):
+        res = []
+        for index in self.sample_pool:
+            codisp = 0
+            for tree in self.forest:
+                nearest_leaf = tree.query(self.train_data[index])
+                codisp += tree.codisp(nearest_leaf)
+            res.append((codisp, index))
+        res.sort(key = lambda x : x[0])
+        indices = [index for (codisp, index) in res[int(0.90*self.train_size):int(self.train_size)]]
+        pd.DataFrame({"timestamp": self.timestamp[indices], "indices": indices}).to_csv("active/"+file, index= False)
+
+    def select_points_mid(self, file):
+        res = []
+        for index in self.sample_pool:
+            codisp = 0
+            for tree in self.forest:
+                nearest_leaf = tree.query(self.train_data[index])
+                codisp += tree.codisp(nearest_leaf)
+            res.append((codisp, index))
+        res.sort(key = lambda x : x[0])
+        indices = [index for (codisp, index) in res[int(0.85*self.train_size):int(0.97*self.train_size)]]
+        pd.DataFrame({"timestamp": self.timestamp[indices], "indices": indices}).to_csv("active/"+file, index= False)
+
+
+    def _update_tree_weight(self, file):
+        indices = pd.read_csv("active/"+file)["indices"]
+
+        self.weight = np.zeros(self.tree_num)
+        for index in indices:
+            point, pos = self.train_data[index], 1 if self.y[index] else -1
+            for i in range(self.tree_num):
+                tree = self.forest[i]
+                nearest_leaf = tree.query(point)
+                self.weight[i] += np.exp(pos * tree.codisp(nearest_leaf))
+        self.weight /= self.weight.sum()
+        self.weight *= self.tree_num
+
+
+    def _update_nomal_point(self, file):
+        indices = pd.read_csv("active/"+file)["indices"]
+
+        for index in indices:
+            pos = 1 if self.y[index] else -1
+            for i in range(self.tree_num):
+                tree = self.forest[i]
+                # TODO 这个函数未完成
+
+
+
     def predict(self, X, codisp = True):
         score, Y = [] if codisp else None, []
         for i in range(len(X)):

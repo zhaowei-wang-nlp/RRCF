@@ -5,11 +5,11 @@ from collections import Counter
 from rrcf import RRCF
 from evaluation import label_evaluation
 import pickle
-REPEAT_TIMES = 1
+REPEAT_TIMES = 3
 import json
-
-ts = json.load(open("../train_size.json"))
-sim_data = pickle.load(open("similarity_dict.dat", "rb"))
+if st.CLUSTER:
+    ts = json.load(open("../train_size.json"))
+    sim_data = pickle.load(open("similarity_dict.dat", "rb"))
 def find_nearest(cluster: list) -> str:
     cluster = [c[:-4] for c in cluster if c[-4:] == ".csv"]
     sum = {c : 0 for c in cluster}
@@ -24,19 +24,10 @@ def find_nearest(cluster: list) -> str:
     return res + '.csv'
 
 def select_anomaly_size(anomaly_size, file_name, data):
-    if anomaly_size:
+    if file_name.split("-")[0] in anomaly_size:
         return anomaly_size[file_name.split("-")[0]]
     else:
-        c = Counter(data)
-        top = (0.5 * c[1])/len(data)
-        return top
-
-def get_train_size(file_name):
-    if file_name in ts:
-        return ts[file_name]
-    else:
-        return 0.5
-
+        return 0
 
 
 def RRCF_cluster_test(use_src_dir, output, anomaly_size):
@@ -92,7 +83,6 @@ def RRCF_cluster_test(use_src_dir, output, anomaly_size):
                 if data["F1-score"] > best_perforamnce[f]:
                     best_perforamnce[f] = data["F1-score"]
                     pd.DataFrame({"timestamp": time_dict[f], "anomaly": predict}).to_csv(output + "labels-" + st.STRING + f, index=False)
-                    plot_points(use_src_dir+f, output+"labels-"+st.STRING+f, st.STRING)
 
                 perform.loc[file_index[f], "F1-score"] += data["F1-score"]
                 perform.loc[file_index[f], "recall"] += data["recall"]
@@ -120,7 +110,7 @@ def RRCF_test(use_src_dir, output, anomaly_size):
             print(str(j) + " times test. training ", end="")
 
             start = time.time()
-            a = RRCF(tree_num = 70, tree_size = 1024, top = top)
+            a = RRCF(tree_num = TREE_NUM, tree_size = TREE_SIZE, top = top)
             a.fit(X = train_f)
             print("testing")
             codisp, predict = a.predict(test_f)
@@ -133,19 +123,18 @@ def RRCF_test(use_src_dir, output, anomaly_size):
             if data["F1-score"] > best_performance:
                 best_performance = data["F1-score"]
                 pd.DataFrame({"timestamp": test_time, "anomaly": predict}).to_csv(output + "labels-" + st.STRING + file, index= False)
-                plot_points(use_src_dir+file, output + "labels-" + st.STRING + file, st.STRING)
 
             perform.loc[file_index[file], "F1-score"] += data["F1-score"]
             perform.loc[file_index[file], "recall"] += data["recall"]
             perform.loc[file_index[file], "precision"] += data["precision"]
             print(data)
-    perform.iloc[:, 1:] /= REPEAT_TIMES
-    perform.to_csv(output + "performance-" + st.STRING + ".csv", index = False)
+        perform.iloc[file_index[file], 1:] /= REPEAT_TIMES
+        perform.to_csv(output + "performance-" + st.STRING + ".csv", index = False)
 
 
 if __name__ == "__main__":
     anomaly_size = {"rplp": 0.006, "rspt": 0.0012, "sucp": 0.0025, "tps": 0.0026}
-    use_src_dir = "../single-data/"
+    use_src_dir = "../JSYH_data/"
     used_method = RRCF_cluster_test if st.CLUSTER else RRCF_test
     used_method(use_src_dir, use_src_dir[1:], anomaly_size=anomaly_size)
 

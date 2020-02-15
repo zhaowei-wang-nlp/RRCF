@@ -17,6 +17,9 @@ def RandomForest_test(use_src_dir, output):
         train_f, train_tag, train_time, test_f, test_tag, test_time = preprocess(use_src_dir, file, 0.5, 0.5)
         print(file + " test begin.")
 
+        if st.PART_LABEL:
+            train_f, train_tag, train_time = preprocess("./part_label/", file, 1.0, 0.0)[3:]
+
         best_performance = -1
         for j in range(REPEAT_TIMES):
 
