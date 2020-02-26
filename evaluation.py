@@ -1,6 +1,6 @@
 import numpy as np
 from sys import argv
-from sklearn.metrics import f1_score, precision_score, recall_score
+from sklearn.metrics import f1_score, precision_score, recall_score, precision_recall_curve
 from collections import Counter
 
 # consider delay threshold and missing segments
@@ -45,7 +45,6 @@ def label_evaluation(predict_ans, true_ans, delay = 10):
     except:
         data['message'] = "predict列只能是0或1"
         return data
-    print(Counter(y_pred), Counter(true_ans))
     data['result'] = True
     data['F1-score'], data['precision'], data['recall'] = fscore, precision, recall
     data['message'] = '计算成功'

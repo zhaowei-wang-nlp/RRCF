@@ -1,68 +1,64 @@
 import numpy as np
 import heapq
-from collections import Counter
+from collections import Counter, namedtuple
 import setting as st
 import pandas as pd
 import json
+import time
+
+score_index = namedtuple('score_index', ['score', 'ix'])
+cut_time = 0
+select_time = 0
+
+
 class RRCF:
-    def __init__(self, tree_num, tree_size, top):
+    def __init__(self, tree_num, tree_size):
         self.tree_size = tree_size
         self.tree_num = tree_num
-        self.top = top
         self.weight = [1.0] * self.tree_num
+
     def fit(self, X):
         self.train_data = X
-        # TODO 标签函数签名，现在没有标签更新所以用
-        # def fit(self, X, y, timestamp):
-        # self.y = y
-        # self.timestamp = timestamp
         self.train_size = len(self.train_data)
         self.sample_pool = [i for i in range(self.train_size)]
         self.forest = []
         batch_size = self.train_size // self.tree_size
         while len(self.forest) < self.tree_num:
-            ixs = np.random.choice(self.train_size, size = (min(batch_size, self.tree_num - len(self.forest)),
-                                                            self.tree_size), replace = False)
-            trees = [RCTree(self.train_data[ix], index_labels= ix) for ix in ixs]
+            ixs = np.random.choice(self.train_size, size=(min(batch_size, self.tree_num - len(self.forest)),
+                                                          self.tree_size), replace=False)
+            trees = [RCTree(self.train_data[ix], index_labels=ix) for ix in ixs]
             self.forest.extend(trees)
-        self._set_threshold()
+        global select_time, cut_time
+        f = open("abc.txt", "a")
+        f.write(str(select_time) + " " + str(cut_time) + " ")
+        f.close()
+        select_time, cut_time = 0, 0
 
-
-    def _set_threshold(self):
-        if self.top:
-            heap = []
-            size = int(self.top * self.train_size) or 1
-            for point in self.train_data:
-                co_disp = self._get_codisp(point)
-                heapq.heappush(heap, co_disp)
-                if len(heap) > size:
-                    heapq.heappop(heap)
-            self.threshold = heapq.heappop(heap)
-            print(int((1-self.top) * self.train_size), self.train_size, self.threshold, self.top)
-        else:
-            co_disps = np.zeros(self.train_size)
-            for i in range(self.train_size):
-                co_disps[i] = self._get_codisp(self.train_data[i])
-            mean = np.mean(co_disps)
-            std = np.std(co_disps)
-            self.threshold = mean + 7 * std
-            print(self.train_size, self.threshold, mean, std)
-
+    def set_threshold(self):
+        co_disps = np.zeros(self.train_size)
+        for i in range(self.train_size):
+            co_disps[i] = self._get_codisp(self.train_data[i])
+        mean = np.mean(co_disps)
+        std = np.std(co_disps)
+        self.co_disps = co_disps
+        self.threshold = mean + 5 * std
+        return co_disps
 
     def _check_anomaly(self, co_disp):
         if co_disp >= self.threshold:
             return 1
         else:
             return 0
+
     def _update(self, point, index):
-        # TODO delete a point randomly to maintain the size of the tree?
-        forget_index = np.random.choice(self.sample_pool)
+        forget_index = self.sample_pool[0]
         self.sample_pool.remove(forget_index)
         self.sample_pool.append(index)
         for tree in self.forest:
             if forget_index in tree.leaves:
                 tree.forget_point(forget_index)
                 tree.insert_point(point, index)
+
     def _get_codisp(self, point):
         co_disp = 0
         for i in range(self.tree_num):
@@ -71,67 +67,112 @@ class RRCF:
             co_disp += tree.codisp(nearest_leaf) * self.weight[i]
         return co_disp
 
-    def select_points_top(self, file):
-        res = []
-        for index in self.sample_pool:
-            codisp = 0
-            for tree in self.forest:
-                nearest_leaf = tree.query(self.train_data[index])
-                codisp += tree.codisp(nearest_leaf)
-            res.append((codisp, index))
-        res.sort(key = lambda x : x[0])
-        indices = [index for (codisp, index) in res[int(0.90*self.train_size):int(self.train_size)]]
-        pd.DataFrame({"timestamp": self.timestamp[indices], "indices": indices}).to_csv("active/"+file, index= False)
+    def select_points_randomly(self, file, timestamp):
+        indices = np.random.choice(self.train_size, size=3000, replace=True)
+        pd.DataFrame({"timestamp": timestamp[indices], "indices": indices}).to_csv("active/" + file, index=False)
 
-    def select_points_mid(self, file):
-        res = []
-        for index in self.sample_pool:
-            codisp = 0
-            for tree in self.forest:
-                nearest_leaf = tree.query(self.train_data[index])
-                codisp += tree.codisp(nearest_leaf)
-            res.append((codisp, index))
-        res.sort(key = lambda x : x[0])
-        indices = [index for (codisp, index) in res[int(0.85*self.train_size):int(0.97*self.train_size)]]
-        pd.DataFrame({"timestamp": self.timestamp[indices], "indices": indices}).to_csv("active/"+file, index= False)
+    def find_segs(self, res, high, num = 30, other_segs = None):
+        """
+        Args:
+            res:
+            high: index(ix)的上限
+            num: 窗口数量
+
+        Returns:
+
+        """
+        segs, i, flag = other_segs if other_segs is not None else [], 0, False
+        seg_count = 0
+        while seg_count < num and i < len(res):
+            for seg in segs:
+                if res[i].ix <= seg[1] and res[i].ix >= seg[0]:
+                    flag = True
+                    break
+            if flag:  # 如果当前点已经被选取过, 那么跳过当前点
+                flag = False
+                i += 1
+                continue
+            seg_count += 1
+            segs.append((max(0, res[i].ix - 34), min(high - 1, res[i].ix + 34)))
+            i += 1
+        return segs
+
+    def combine_interval(self, segs):
+        segs = sorted(segs)
+        new_segs = []
+        start, end = -1, -1
+        for seg in segs:
+            if end < seg[0]:
+                if start != -1:
+                    new_segs.append((start, end))
+                start, end = seg[0], seg[1]
+            else:
+                end = max(end, seg[1])
+        if start != -1:
+            new_segs.append((start, end))
+        return new_segs
+    def select_points_top(self, file, timestamp):
+        res = [score_index(self.co_disps[i], i) for i in range(len(self.co_disps))]
+        res.sort(key=lambda x: x[0], reverse=True)
+        # 找到所有区间
+        segs = self.find_segs(res, len(res))
+        # 区间合并
+        new_segs = self.combine_interval(segs)
+        indices = [i for seg in new_segs for i in range(seg[0], seg[1]+1)]
+        pd.DataFrame({"timestamp": timestamp[indices], "indices": indices}).to_csv("active/" + file, index=False)
+
+    def select_points_mid(self, file, timestamp):
+        res = [score_index(self.co_disps[i], i) for i in range(len(self.co_disps))]
+        res.sort(key=lambda x: x[0], reverse=True)
+        # 找到所有区间
+        segs = self.find_segs(res[500: ], len(res))# 不找最异常的点
+        # 区间合并
+        new_segs = self.combine_interval(segs)
+        indices = [i for seg in new_segs for i in range(seg[0], seg[1]+1)]
+        pd.DataFrame({"timestamp": timestamp[indices], "indices": indices}).to_csv("active/" + file, index=False)
+
+    def select_points_bucket(self, file, timestamp):
+        res = [score_index(self.co_disps[i], i) for i in range(len(self.co_disps))]
+
+        res.sort(key=lambda x: x[0], reverse=True)
+        size, segs = len(res) // 10, []
+        for i in range(10):
+            segs = self.find_segs(res[size*i: size*i+size], len(res), num = 3, other_segs= segs)
+        # 合并区间
+        new_segs = self.combine_interval(segs)
+        indices = [i for seg in new_segs for i in range(seg[0], seg[1] + 1)]
+        pd.DataFrame({"timestamp": timestamp[indices], "indices": indices}).to_csv("active/" + file, index=False)
 
 
-    def _update_tree_weight(self, file):
-        indices = pd.read_csv("active/"+file)["indices"]
+    def update_tree_weight(self, file, y):
+        indices = pd.read_csv("active/" + file)["indices"]
 
         self.weight = np.zeros(self.tree_num)
         for index in indices:
-            point, pos = self.train_data[index], 1 if self.y[index] else -1
-            for i in range(self.tree_num):
-                tree = self.forest[i]
-                nearest_leaf = tree.query(point)
-                self.weight[i] += np.exp(pos * tree.codisp(nearest_leaf))
-        self.weight /= self.weight.sum()
-        self.weight *= self.tree_num
+            if y[index]:  # 如果是一个点是异常才算到weight中
+                point = self.train_data[index]
+                for i in range(self.tree_num):
+                    tree = self.forest[i]
+                    nearest_leaf = tree.query(point)
+                    self.weight[i] += tree.codisp(nearest_leaf)
+        if self.weight.sum() != 0:
+            self.weight /= self.weight.sum()
+            self.weight *= self.tree_num
+        else:
+            self.weight = [1.0] * self.tree_num
 
 
-    def _update_nomal_point(self, file):
-        indices = pd.read_csv("active/"+file)["indices"]
-
-        for index in indices:
-            pos = 1 if self.y[index] else -1
-            for i in range(self.tree_num):
-                tree = self.forest[i]
-                # TODO 这个函数未完成
-
-
-
-    def predict(self, X, codisp = True):
-        score, Y = [] if codisp else None, []
+    def predict(self, X):
+        score= []
         for i in range(len(X)):
             co_disp = self._get_codisp(X[i])
-            tag = self._check_anomaly(co_disp)
             index = i + self.train_size
-            # TODO changes tag
-            if st.UPDATE_ANOMALY and tag or st.UPDATE_ALL:
+            if st.UPDATE_ANOMALY and self._check_anomaly(co_disp) or st.UPDATE_ALL:
                 self._update(X[i], index)
-            (score.append(co_disp), Y.append(tag)) if codisp else Y.append(tag)
-        return np.array(score), np.array(Y)
+            score.append(co_disp)
+        if st.UPDATE_ANOMALY or st.UPDATE_ALL:
+            self.train_size += len(X)  # update train size
+        return np.array(score)
 
 
 class RCTree:
@@ -198,7 +239,7 @@ class RCTree:
     >>> tree.forget_point(100)
     """
 
-    def __init__(self, X=None, index_labels=None, precision=9, 
+    def __init__(self, X=None, index_labels=None, precision=9,
                  random_state=None):
         # Random number generation with provided seed
         if isinstance(random_state, int):
@@ -276,7 +317,6 @@ class RCTree:
         print_tree(self.root)
         return treestr
 
-
     def _maximum_gap(self, X, S):
         """
         :param X: all data points
@@ -294,7 +334,7 @@ class RCTree:
                 if pre is not None:
                     max_gap[j] = max(max_gap[j], np.abs(cur[i] - pre))
                 pre = cur[i]
-        return max_gap/max_gap.sum()
+        return max_gap / max_gap.sum()
 
     def _compute_variance(self, X, S):
         if len(X) == 0:
@@ -303,9 +343,9 @@ class RCTree:
         nums = X[S]
         for j in range(len(nums[0])):
             v[j] = np.var(nums[:, j])
-        return v/v.sum()
+        return v / v.sum()
 
-    def _density_cut(self, q, S, N, max = None, min = None):
+    def _density_cut(self, q, S, N, max=None, min=None):
         """
         :param q: the dimension q of all data points
         :param S: the set S
@@ -322,15 +362,15 @@ class RCTree:
         counts, interval = np.array([0.0] * N), (max - min) / N
         for n in nums:
             index = int((n - min) // interval)
-            index = index - 1 if index == N else index # n等于max的时候，index要减一
+            index = index - 1 if index == N else index  # n等于max的时候，index要减一
             counts[index] += 1
         max_count = counts.max()
-        density = np.array([max_count - n + 1 for n in counts])#对max_count - n + 1进行归一化
+        density = np.array([max_count - n + 1 for n in counts])  # 对max_count - n + 1进行归一化
         density /= density.sum()
-        i = self.rng.choice(N, p = density)
+        i = self.rng.choice(N, p=density)
         base = min + i * interval
         return self.rng.uniform(base, base + interval)
-    
+
     def _cut(self, X, S, parent=None, side='l'):
         # Find max and min over all d dimensions
         xmax = X[S].max(axis=0)
@@ -338,19 +378,27 @@ class RCTree:
 
         # Compute l
         l = (xmax - xmin)
-        # TODO changes tag
-        if st.FEATURE_SELECT:
-            max_gap = self._maximum_gap(X, S)
-            #v = self._compute_variance(X, S)
-            l = (l + max_gap) / 2
         l /= l.sum()
 
+        # TODO changes tag
+        if st.FEATURE_SELECT:
+            start = time.time()
+            max_gap = self._maximum_gap(X, S)
+            # v = self._compute_variance(X, S)
+            l = (l + max_gap) / 2
+            end = time.time()
+            global select_time
+            select_time += end - start
         # Determine dimension to cut
         q = self.rng.choice(self.ndim, p=l)
         # Determine value for split
         # TODO changes tag
         if st.CUT_SELECT:
+            start = time.time()
             p = self._density_cut(X[:, q], S, 20, xmax[q], xmin[q])
+            end = time.time()
+            global cut_time
+            cut_time += end -start
         else:
             p = self.rng.uniform(xmin[q], xmax[q])
         # Determine subset of points to left
@@ -363,7 +411,6 @@ class RCTree:
         if parent is not None:
             setattr(parent, side, child)
         return S1, S2, child
-
     def _mktree(self, X, S, N, I, parent=None, side='root', depth=0):
         # Increment depth as we traverse down
         depth += 1
@@ -830,7 +877,10 @@ class RCTree:
             results.append(result)
             node = parent
         co_displacement = max(results)
-        return co_displacement
+        if st.CODISP_DEPTH and leaf.d > 0:
+            return co_displacement / leaf.d
+        else:
+            return co_displacement
 
     def get_bbox(self, branch=None):
         """
@@ -1012,7 +1062,7 @@ class RCTree:
         root.u = None
         # Fill in leaves dict
         leaves = {}
-        self.map_leaves(root, op=(lambda x, d: d.update({x.i : x})),
+        self.map_leaves(root, op=(lambda x, d: d.update({x.i: x})),
                         d=leaves)
         # Set root of tree to new root
         self.root = root
