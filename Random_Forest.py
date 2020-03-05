@@ -58,7 +58,7 @@ def Random_Forest(use_src_dir, output, type = "full", label_type = None):
 
             print(str(j) + "times test. training ", end="")
             start = time.time()
-            a = RandomForestClassifier(n_estimators= 70, max_features= None, n_jobs = 1)
+            a = RandomForestClassifier(n_estimators= 70, max_features= None,n_jobs = 1)
             a.fit(X= train_f, y = train_tag)
             end = time.time()
             tt = end - start
@@ -88,4 +88,7 @@ def Random_Forest(use_src_dir, output, type = "full", label_type = None):
 
 if __name__ == "__main__":
     use_src_dir = "../contest_data/"
-    Random_Forest(use_src_dir, use_src_dir[1:] + "RF/", type = "part", label_type= "TOP_WEIGHT")
+    output_dir =  use_src_dir[1:] + "RF/"
+    if not os.path.exists(output_dir + "/"):
+        os.mkdir(output_dir + "/")
+    Random_Forest(use_src_dir, output_dir, type = "part", label_type= "TOP_WEIGHT")

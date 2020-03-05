@@ -6,16 +6,16 @@ from sklearn.cluster import DBSCAN
 import pickle
 import json
 import matplotlib.pyplot as plt
-def plot_cluster(cluster, output):
+def plot_cluster(cluster, cnumber, output):
     plt.figure(figsize=(19.2, 13.4), dpi=100)
     for i in range(len(cluster)):
         kpi = cluster[i]
-        plt.subplot( len(cluster), 1, i + 1)
+        plt.subplot(len(cluster), 1, i + 1)
         plt.title(kpi)
         data = pd.read_csv("../contest_data/" + kpi)
         data["time"] = pd.to_datetime(data["timestamp"], unit='s')
         plt.plot(data["time"], data["value"])
-    plt.savefig(output + "cluster-" + str(kpi) + ".jpg")
+    plt.savefig(output + "cluster-" + str(cnumber) + ".jpg")
 
 def form_array(sim_data):
 
@@ -38,19 +38,18 @@ if __name__ == "__main__":
     dis_mat, name2index = form_array(data_dict)
     index2name = {name2index[name]:name for name in name2index}
 
-    classes = [int(i) for i in DBSCAN(eps = 23, min_samples = 1).fit_predict(dis_mat)]
+    classes = [int(i) for i in DBSCAN(eps = 18, min_samples = 1).fit_predict(dis_mat)]
     clusters = {}
     for i in range(len(classes)):
         if classes[i] not in clusters:
             clusters[classes[i]] = []
         clusters[classes[i]].append(index2name[i]+".csv")
     print(classes)
-
     output = "./contest_cluster_pic/"
     for file in os.listdir(output):
         os.remove(output + file)
     for c in clusters:
-        plot_cluster(clusters[c], output)
+        plot_cluster(clusters[c], c, output)
 
     with open("./contest_data/file_clusters.txt","w") as output:
         output.write(json.dumps(clusters, ensure_ascii=False) + '\n')

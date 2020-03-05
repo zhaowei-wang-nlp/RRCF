@@ -5,8 +5,11 @@ from donut import Donut
 from tensorflow import keras as K
 from tfsnippet.modules import Sequential
 from donut import DonutTrainer, DonutPredictor
+import os
 from utils import *
 import sys
+from evaluation import label_evaluation
+from collections import Counter
 
 def donut_test(file):
     back_up = pd.read_csv("./contest_data/donut/performance.csv")
@@ -66,9 +69,9 @@ def donut_test(file):
     storage = get_size(trainer) + get_size(predictor)
     perform.loc[file, "storage"] = storage
 
-    pd.DataFrame({"timestamp":test_time[-len(test_score):], "score":test_score}).to_csv("./contest_data/donut/test-"+file, index = False)
+    pd.DataFrame({"timestamp":test_time[-len(test_score):], "score":test_score}).to_csv("./contest_data/donut/test-donut"+file, index = False)
 
-    perform.to_csv("./contest_data/donut/performance.csv", index = False)
+    perform.to_csv("./contest_data/donut/performance-donut.csv", index = False)
 
 
 if __name__ == "__main__":

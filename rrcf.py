@@ -1,3 +1,4 @@
+#coding=utf-8
 import numpy as np
 import heapq
 from collections import Counter, namedtuple
@@ -7,8 +8,6 @@ import json
 import time
 
 score_index = namedtuple('score_index', ['score', 'ix'])
-cut_time = 0
-select_time = 0
 
 
 class RRCF:
@@ -28,11 +27,6 @@ class RRCF:
                                                           self.tree_size), replace=False)
             trees = [RCTree(self.train_data[ix], index_labels=ix) for ix in ixs]
             self.forest.extend(trees)
-        global select_time, cut_time
-        f = open("abc.txt", "a")
-        f.write(str(select_time) + " " + str(cut_time) + " ")
-        f.close()
-        select_time, cut_time = 0, 0
 
     def set_threshold(self):
         co_disps = np.zeros(self.train_size)
@@ -75,11 +69,7 @@ class RRCF:
         """
         Args:
             res:
-            high: index(ix)的上限
-            num: 窗口数量
-
         Returns:
-
         """
         segs, i, flag = other_segs if other_segs is not None else [], 0, False
         seg_count = 0
@@ -88,7 +78,7 @@ class RRCF:
                 if res[i].ix <= seg[1] and res[i].ix >= seg[0]:
                     flag = True
                     break
-            if flag:  # 如果当前点已经被选取过, 那么跳过当前点
+            if flag:
                 flag = False
                 i += 1
                 continue
@@ -114,9 +104,7 @@ class RRCF:
     def select_points_top(self, file, timestamp):
         res = [score_index(self.co_disps[i], i) for i in range(len(self.co_disps))]
         res.sort(key=lambda x: x[0], reverse=True)
-        # 找到所有区间
         segs = self.find_segs(res, len(res))
-        # 区间合并
         new_segs = self.combine_interval(segs)
         indices = [i for seg in new_segs for i in range(seg[0], seg[1]+1)]
         pd.DataFrame({"timestamp": timestamp[indices], "indices": indices}).to_csv("active/" + file, index=False)
@@ -124,9 +112,7 @@ class RRCF:
     def select_points_mid(self, file, timestamp):
         res = [score_index(self.co_disps[i], i) for i in range(len(self.co_disps))]
         res.sort(key=lambda x: x[0], reverse=True)
-        # 找到所有区间
-        segs = self.find_segs(res[500: ], len(res))# 不找最异常的点
-        # 区间合并
+        segs = self.find_segs(res[500: ], len(res))
         new_segs = self.combine_interval(segs)
         indices = [i for seg in new_segs for i in range(seg[0], seg[1]+1)]
         pd.DataFrame({"timestamp": timestamp[indices], "indices": indices}).to_csv("active/" + file, index=False)
@@ -138,7 +124,6 @@ class RRCF:
         size, segs = len(res) // 10, []
         for i in range(10):
             segs = self.find_segs(res[size*i: size*i+size], len(res), num = 3, other_segs= segs)
-        # 合并区间
         new_segs = self.combine_interval(segs)
         indices = [i for seg in new_segs for i in range(seg[0], seg[1] + 1)]
         pd.DataFrame({"timestamp": timestamp[indices], "indices": indices}).to_csv("active/" + file, index=False)
@@ -149,7 +134,7 @@ class RRCF:
 
         self.weight = np.zeros(self.tree_num)
         for index in indices:
-            if y[index]:  # 如果是一个点是异常才算到weight中
+            if y[index]:
                 point = self.train_data[index]
                 for i in range(self.tree_num):
                     tree = self.forest[i]
@@ -160,6 +145,21 @@ class RRCF:
             self.weight *= self.tree_num
         else:
             self.weight = [1.0] * self.tree_num
+
+    def insert_more_normal(self, file, y):
+        indices = pd.read_csv("active/" + file)["indices"]
+        i = 0
+        for index in indices:
+            if not y[index]:
+                point = self.train_data[index]
+                ins_cnt, tr_cnt = 0, 0
+                while ins_cnt < 5 and tr_cnt < self.tree_num:
+                    tree = self.forest[i]
+                    if index not in tree.leaves:
+                        tree.insert_point(point, index)
+                        ins_cnt += 1
+                    tr_cnt += 1
+                    i = (i + 1) % self.tree_num
 
 
     def predict(self, X):
@@ -253,6 +253,7 @@ class RCTree:
         # Initialize tree root
         self.root = None
         self.ndim = None
+        self.max_gap = self._maximum_gap(X)
         if X is not None:
             # Round data to avoid sorting errors
             X = np.around(X, decimals=precision)
@@ -317,7 +318,7 @@ class RCTree:
         print_tree(self.root)
         return treestr
 
-    def _maximum_gap(self, X, S):
+    def _maximum_gap(self, X):
         """
         :param X: all data points
         :param S: tags to indicate which point is in set S
@@ -326,7 +327,7 @@ class RCTree:
         if len(X) == 0:
             return None
         max_gap = np.array([0.0] * len(X[0]))
-        nums = X[S]
+        nums = X
         for j in range(len(X[0])):
             cur = sorted(nums[:, j])
             pre = None
@@ -336,14 +337,6 @@ class RCTree:
                 pre = cur[i]
         return max_gap / max_gap.sum()
 
-    def _compute_variance(self, X, S):
-        if len(X) == 0:
-            return None
-        v = np.array([0.0] * len(X[0]))
-        nums = X[S]
-        for j in range(len(nums[0])):
-            v[j] = np.var(nums[:, j])
-        return v / v.sum()
 
     def _density_cut(self, q, S, N, max=None, min=None):
         """
@@ -382,23 +375,16 @@ class RCTree:
 
         # TODO changes tag
         if st.FEATURE_SELECT:
-            start = time.time()
-            max_gap = self._maximum_gap(X, S)
+            max_gap = [self.max_gap[i] if l[i] > 0 else 0 for i in range(len(self.max_gap))]
             # v = self._compute_variance(X, S)
-            l = (l + max_gap) / 2
-            end = time.time()
-            global select_time
-            select_time += end - start
+            l = (l + max_gap)
+            l /= l.sum()
         # Determine dimension to cut
         q = self.rng.choice(self.ndim, p=l)
         # Determine value for split
         # TODO changes tag
         if st.CUT_SELECT:
-            start = time.time()
             p = self._density_cut(X[:, q], S, 20, xmax[q], xmin[q])
-            end = time.time()
-            global cut_time
-            cut_time += end -start
         else:
             p = self.rng.uniform(xmin[q], xmax[q])
         # Determine subset of points to left
@@ -825,6 +811,18 @@ class RCTree:
         # Count number of nodes in sibling subtree
         displacement = sibling.n
         return displacement
+
+    def depth_score(self, leaf): # TODO changed DELETE
+        if not isinstance(leaf, Leaf):
+            try:
+                leaf = self.leaves[leaf]
+            except KeyError:
+                raise KeyError(
+                    'leaf must be a Leaf instance or key to self.leaves')
+        # Handle case where leaf is root
+        if leaf is self.root:
+            return 0
+        return 1/ leaf.d if leaf.d > 0 else 1
 
     def codisp(self, leaf):
         """
