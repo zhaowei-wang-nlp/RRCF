@@ -1,0 +1,8 @@
+file,median,std,diff,diff-1,diff-2,ewm
+adb2fd.csv,True,True,True,False,False,True
+6a757d.csv,True,True,True,False,False,True
+42d661.csv,True,True,True,False,False,True
+da10a6.csv,True,True,True,False,False,False
+8723f0.csv,True,True,True,True,True,True
+6d1114.csv,True,True,True,False,False,True
+6efa3a.csv,True,True,True,True,True,True
