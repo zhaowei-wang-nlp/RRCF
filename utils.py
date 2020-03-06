@@ -67,21 +67,27 @@ def skewness(x, window):
     return res
 
 
-def extract_features(data, tag = None, diff_para = 288):
+def extract_features(data, f_indicator, tag = None, diff_para = 288):
     s = pd.Series(data)
     if st.OUR_FEATURE:
         features = [data]
+        if f_indicator["median"]: # TODO RECOVER
+            features.append(s.rolling(window = 60).median().values)
+        if f_indicator["std"]:
+            features.append(s.rolling(window=60).std().values)
+        if f_indicator["diff"]:
+            features.append(s.diff(periods = diff_para).values)
+        if f_indicator["diff-1"]:
+            features.append(s.diff(periods=1).values)
+        if f_indicator["diff-2"]:
+            features.append(s.diff(periods=2).values)
+        if f_indicator["ewm"]:
+            features.append(s.ewm(span=3,adjust=False).mean().values)
         features.append(s.rolling(window = 60).mean().values)
-        features.append(s.rolling(window = 60).median().values)
-        features.append(s.rolling(window=60).std().values)
         # TODO changes tag
         if st.TS_FRESH:
             features.append(kurtosis(s, window = 60))
             features.append(skewness(s, window = 60))
-        features.append(s.diff(periods = diff_para).values)
-        features.append(s.diff(periods=1).values)
-        features.append(s.diff(periods=2).values)
-        features.append(s.ewm(span=3,adjust=False).mean().values)
         tag = tag[diff_para:] if tag is not None else None
         features = np.array(features)[:, diff_para:]
         return features.T, tag
@@ -131,35 +137,9 @@ def re_construct(data):
     full_data = full_time.merge(data, how = 'left', left_on = 'timestamp', right_on = 'timestamp')
     full_data.interpolate(inplace = True)
     return full_data
-def ADF_test(data):
-    a = sm.tsa.stattools.adfuller(data)
-    result = a[0]
-    threshold = a[4]["1%"]
-    return not result < threshold
-
-def get_rmse(records_real, records_predict):
-    mse = get_mse(records_real, records_predict)
-    if mse:
-        return math.sqrt(mse)
-    else:
-        return None
 
 
-def data_analysis(data, diff_para):
-    sharp = np.zeros(len(data) - diff_para)
-    stable = np.zeros(len(data) - diff_para)
-
-
-    for i in range(diff_para, len(data)):
-        pre = data[i - diff_para: i]
-        m = np.mean(pre)
-        s = np.std(pre)
-        if data[i] > m + 3 * s:
-            sharp[i] = 1
-        stable[i] = s
-
-
-def preprocess(use_src_dir, file, train_size = 0.5, test_size = 0.5):
+def preprocess(use_src_dir, file, feature_indicator, train_size = 0.5, test_size = 0.5):# TODO RECOVER
 
     data = pd.read_csv(use_src_dir + file)
 
@@ -168,7 +148,7 @@ def preprocess(use_src_dir, file, train_size = 0.5, test_size = 0.5):
 
     data["value"] = normalize_max_min(data["value"].values)
     train_value, _ = split_data(data["value"].values, train_size, test_size)
-    features, tag = extract_features(data["value"].values, data["anomaly"].values, diff_para)
+    features, tag = extract_features(data["value"].values, feature_indicator, data["anomaly"].values, diff_para)# TODO RECOVER
     time = data["timestamp"].values[diff_para: ]
     train_f, test_f = split_data(features, train_size, test_size)
     train_tag, test_tag = split_data(tag, train_size, test_size)

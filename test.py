@@ -5,7 +5,7 @@ import time
 from rrcf import RRCF
 import pickle
 from bestF1 import compute_F1_dir, compute_best_F1
-REPEAT_TIMES = 1
+REPEAT_TIMES = 10
 import json
 sim_data = None
 def find_nearest(cluster):
@@ -112,6 +112,10 @@ def RRCF_cluster_test(use_src_dir, output):
 
 def RRCF_test(use_src_dir, output, batch, batch_size):
     file_list = sorted([p for p in os.listdir(use_src_dir) if os.path.isfile(use_src_dir + p)])
+    # TODO RECOVER
+    featrue_df = pd.read_csv("./feature_df.csv")
+    featrue_df.index = featrue_df["file"]
+    file_list = list(featrue_df["file"])
     file_list = file_list[batch_size * batch: min(batch_size * batch + batch_size, len(file_list))]
     length = len(file_list)
     file_index = {file_list[i]:i for i in range(length)}
@@ -123,7 +127,7 @@ def RRCF_test(use_src_dir, output, batch, batch_size):
 
     print(st.STRING)
     for file in file_list:
-        train_f, train_tag, train_time, test_f, test_tag, test_time = preprocess(use_src_dir, file, 0.5, 0.5)
+        train_f, train_tag, train_time, test_f, test_tag, test_time = preprocess(use_src_dir, file, featrue_df.loc[file, :], 0.5, 0.5)
         print(file+" test begin.")
 
         for j in range(REPEAT_TIMES):
@@ -177,7 +181,7 @@ def RRCF_test(use_src_dir, output, batch, batch_size):
 
 
 if __name__ == "__main__":
-    version = int(10 * float(sys.argv[1])) if len(sys.argv) > 1 else int(10 * float("1.3"))
+    version = int(10 * float(sys.argv[1])) if len(sys.argv) > 1 else int(10 * float("2.1"))
     batch = int(sys.argv[2]) if len(sys.argv) > 2 else 0
     batch_size = int(sys.argv[3]) if len(sys.argv) > 3 else 5
     use_src_dir = "../contest_data/"
@@ -227,7 +231,7 @@ if __name__ == "__main__":
     used_method = RRCF_cluster_test if st.CLUSTER else RRCF_test
     if st.CLUSTER:
         sim_data = pickle.load(open("./contest_data/similarity_dict.dat", "rb"))
-    output_dir = use_src_dir[1:] + "repeat_times/" # TODO RECOVER
+    output_dir = use_src_dir[1:]
     if not os.path.exists(output_dir + st.STRING + "/"):
         os.mkdir(output_dir + st.STRING + "/")
     used_method(use_src_dir, output_dir, batch, batch_size)
