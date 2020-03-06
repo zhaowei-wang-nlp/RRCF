@@ -8,20 +8,19 @@ from donut import DonutTrainer, DonutPredictor
 import os
 from utils import *
 import sys
-from evaluation import label_evaluation
-from collections import Counter
+from bestF1 import compute_best_F1
 
-def donut_test(file):
-    back_up = pd.read_csv("./contest_data/donut/performance.csv")
-    length = len(back_up) + 1
-    perform = pd.DataFrame()
-    perform["file"] = list(back_up["file"].values) + [file]
-    perform["train-time"] = list(back_up["train-time"].values) + [0.0]
-    perform["test-time"] = list(back_up["test-time"].values) + [0.0]
-    perform["storage"] = list(back_up["storage"].values) + [0.0]
+def donut_test(src_dir, output_dir, file, batch):
+    if os.path.exists(output_dir + "performance-donut-" + str(batch) + ".csv"):
+        perform = pd.read_csv(output_dir + "performance-donut-" + str(batch) + ".csv")
+    else:
+        perform = pd.DataFrame({"file":[], "storage":[], "train-time":[], "codisp-time":[], "test-time":[], "precision":[], "recall":[],
+                               "best-F1": [], "best-threshold":[]})
+    perform = perform.append([{'file': file, "storage":0.0, "train-time":0.0, "codisp-time":0.0, "test-time":0.0, "precision":0.0, "recall":0.0,
+                               "best-F1":0.0, "best-threshold":0.0}], ignore_index=True)
     perform.index = perform["file"]
 
-    data = pd.read_csv("../contest_data/" + file)
+    data = pd.read_csv(src_dir + file)
     timestamp, value, labels = data["timestamp"], data["value"], data["anomaly"]
     missing = np.zeros(len(timestamp))
 
@@ -69,14 +68,24 @@ def donut_test(file):
     storage = get_size(trainer) + get_size(predictor)
     perform.loc[file, "storage"] = storage
 
-    pd.DataFrame({"timestamp":test_time[-len(test_score):], "score":test_score}).to_csv("./contest_data/donut/test-donut"+file, index = False)
+    pd.DataFrame({"timestamp":test_time[-len(test_score):], "score":test_score}).to_csv(output_dir + "test-donut"+file, index = False)
+    best_F1, best_threshold, precision, recall = compute_best_F1(src_dir + file, output_dir+"test-donut"+file)
+    perform.loc[file, "best-F1"] = best_F1
+    perform.loc[file, "best-threshold"] = best_threshold
+    perform.loc[file, "precision"] = precision
+    perform.loc[file, "recall"] = recall
 
-    perform.to_csv("./contest_data/donut/performance-donut.csv", index = False)
+    perform.to_csv(output_dir + "performance-donut-" + str(batch) + ".csv", index = False)
 
 
 if __name__ == "__main__":
-    file = sys.argv[1]
-    donut_test(file = file)
+    file = sys.argv[1] if len(sys.argv) > 1 else "0efb37.csv"
+    batch = sys.argv[2] if len(sys.argv) > 2 else 0
+    src_dir = "../contest_data/"
+    output_dir = src_dir[1:] + "donut/"
+    if not os.path.exists(output_dir):
+        os.mkdir(output_dir)
+    donut_test(src_dir, output_dir, file, batch)
 
 
 

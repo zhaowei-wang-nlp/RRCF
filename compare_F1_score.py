@@ -1,8 +1,8 @@
 import numpy as np
 import pandas as pd
-ROUND_NUM = 4
+ROUND_NUM = 3
 if __name__ == "__main__":
-    dir = "../3.5/"
+    dir = "../3.5-不聚类/"
     version_list = [("2.1", "1.3", "6个特征优于rrcf"), ("3.2", "2.1", "切分特征选择"), ("3.3", "2.1", "切分阈值选择"),
                     ("3.4",  "2.1", "异常分数计算"), ("3.5", "2.1", "全部优化"), ("3.6", "3.5", "检测流程"),
                     ("5.1", "3.6", "标注反馈1"), ("5.2", "3.6", "标注反馈2"), ("5.3", "3.6", "标注反馈3"),
@@ -34,4 +34,4 @@ if __name__ == "__main__":
         total_frame[version + "best-F1"] = best_F1
 
 
-    total_frame.to_csv(dir + "挑战赛数据.csv", encoding= "gbk")
+    total_frame.to_csv(dir + "建行数据.csv", encoding= "gbk")

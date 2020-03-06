@@ -131,6 +131,32 @@ def re_construct(data):
     full_data = full_time.merge(data, how = 'left', left_on = 'timestamp', right_on = 'timestamp')
     full_data.interpolate(inplace = True)
     return full_data
+def ADF_test(data):
+    a = sm.tsa.stattools.adfuller(data)
+    result = a[0]
+    threshold = a[4]["1%"]
+    return not result < threshold
+
+def get_rmse(records_real, records_predict):
+    mse = get_mse(records_real, records_predict)
+    if mse:
+        return math.sqrt(mse)
+    else:
+        return None
+
+
+def data_analysis(data, diff_para):
+    sharp = np.zeros(len(data) - diff_para)
+    stable = np.zeros(len(data) - diff_para)
+
+
+    for i in range(diff_para, len(data)):
+        pre = data[i - diff_para: i]
+        m = np.mean(pre)
+        s = np.std(pre)
+        if data[i] > m + 3 * s:
+            sharp[i] = 1
+        stable[i] = s
 
 
 def preprocess(use_src_dir, file, train_size = 0.5, test_size = 0.5):

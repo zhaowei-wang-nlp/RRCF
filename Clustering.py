@@ -10,7 +10,7 @@ def plot_cluster(cluster, cnumber, output):
     plt.figure(figsize=(19.2, 13.4), dpi=100)
     for i in range(len(cluster)):
         kpi = cluster[i]
-        plt.subplot(len(cluster), 1, i + 1)
+        plt.subplot( len(cluster), 1, i + 1)
         plt.title(kpi)
         data = pd.read_csv("../contest_data/" + kpi)
         data["time"] = pd.to_datetime(data["timestamp"], unit='s')

@@ -5,7 +5,7 @@ import time
 from rrcf import RRCF
 import pickle
 from bestF1 import compute_F1_dir, compute_best_F1
-REPEAT_TIMES = 10
+REPEAT_TIMES = 1
 import json
 sim_data = None
 def find_nearest(cluster):
@@ -165,9 +165,9 @@ def RRCF_test(use_src_dir, output, batch, batch_size):
             end = time.time()
             perform.loc[file_index[file], "test-time"] += end - start
             perform.loc[file_index[file], "storage"] += get_size(a)
-            pd.DataFrame({"timestamp": test_time, "score":codisp}).to_csv(output + str(REPEAT_TIMES) + "test-" + st.STRING + file, index= False)
-            pd.DataFrame({"timestamp": train_time, "score": train_codisp}).to_csv(output + str(REPEAT_TIMES) + "train-" + st.STRING  + file, index=False)
-            best_F1, best_threshold, precision, recall = compute_best_F1(use_src_dir + file, output + str(REPEAT_TIMES) + "test-" + st.STRING + file)
+            pd.DataFrame({"timestamp": test_time, "score":codisp}).to_csv(output + str(j) + "test-" + st.STRING + file, index= False)
+            pd.DataFrame({"timestamp": train_time, "score": train_codisp}).to_csv(output + str(j) + "train-" + st.STRING  + file, index=False)
+            best_F1, best_threshold, precision, recall = compute_best_F1(use_src_dir + file, output + str(j) + "test-" + st.STRING + file)
             perform.loc[file_index[file], "best-F1"] += best_F1
             perform.loc[file_index[file], "best-threshold"] += best_threshold
             perform.loc[file_index[file], "precision"] += precision
@@ -227,7 +227,7 @@ if __name__ == "__main__":
     used_method = RRCF_cluster_test if st.CLUSTER else RRCF_test
     if st.CLUSTER:
         sim_data = pickle.load(open("./contest_data/similarity_dict.dat", "rb"))
-    output_dir = use_src_dir[1:]
+    output_dir = use_src_dir[1:] + "repeat_times/" # TODO RECOVER
     if not os.path.exists(output_dir + st.STRING + "/"):
         os.mkdir(output_dir + st.STRING + "/")
     used_method(use_src_dir, output_dir, batch, batch_size)
