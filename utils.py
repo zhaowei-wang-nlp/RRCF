@@ -66,7 +66,12 @@ def skewness(x, window):
 
     return res
 
-
+# features.append(build_window_diff(s, window))
+def build_window_diff(s, window):
+    min = s.rolling(window=window,center=True).max().interpolate()
+    feature = np.zeros(s.values.shape)
+    feature[:] = s[:] - min[:]
+    return feature
 def extract_features(data, tag = None, diff_para = 288):
     s = pd.Series(data)
     if st.OUR_FEATURE:
@@ -79,11 +84,21 @@ def extract_features(data, tag = None, diff_para = 288):
             features.append(kurtosis(s, window = 60))
             features.append(skewness(s, window = 60))
         features.append(s.diff(periods = diff_para).values)
-        features.append(s.diff(periods=1).values)
-        features.append(s.diff(periods=2).values)
+        features.append(s.diff(periods=diff_para * 7).values) # TODO RECOVER
+
+        #features.append(s.diff(periods=1).values)
+        #features.append(s.diff(periods=2).values)
         features.append(s.ewm(span=3,adjust=False).mean().values)
-        tag = tag[diff_para:] if tag is not None else None
-        features = np.array(features)[:, diff_para:]
+        """
+        for i in range(5):
+            temp = np.zeros(data.shape)
+            for j in range(len(temp)):
+                if (j - i - 1) >= 0:
+                    temp[j] = data[j - i - 1]
+            features.append(temp)
+        """
+        tag = tag[diff_para * 7:] if tag is not None else None # TODO RECOVER
+        features = np.array(features)[:, diff_para * 7:] # TODO RECOVER
         return features.T, tag
     else:
         features = np.zeros((len(data) - diff_para, 6))
@@ -169,7 +184,7 @@ def preprocess(use_src_dir, file, train_size = 0.5, test_size = 0.5):
     data["value"] = normalize_max_min(data["value"].values)
     train_value, _ = split_data(data["value"].values, train_size, test_size)
     features, tag = extract_features(data["value"].values, data["anomaly"].values, diff_para)
-    time = data["timestamp"].values[diff_para: ]
+    time = data["timestamp"].values[diff_para * 7: ] # TODO RECOVER
     train_f, test_f = split_data(features, train_size, test_size)
     train_tag, test_tag = split_data(tag, train_size, test_size)
     train_time, test_time = split_data(time, train_size, test_size)

@@ -69,7 +69,7 @@ def donut_test(src_dir, output_dir, file, batch):
     perform.loc[file, "storage"] = storage
 
     pd.DataFrame({"timestamp":test_time[-len(test_score):], "score":test_score}).to_csv(output_dir + "test-donut"+file, index = False)
-    best_F1, best_threshold, precision, recall = compute_best_F1(src_dir + file, output_dir+"test-donut"+file)
+    best_F1, best_threshold, precision, recall = compute_best_F1(src_dir + file, output_dir+"test-donut"+file, reverse= True, mean_start=False)
     perform.loc[file, "best-F1"] = best_F1
     perform.loc[file, "best-threshold"] = best_threshold
     perform.loc[file, "precision"] = precision

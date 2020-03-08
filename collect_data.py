@@ -1,10 +1,10 @@
 import pandas as pd
 if __name__ == "__main__":
-    dir = "../3.5/"
-    version_list = ["1.3", "2.1", "3.2", "3.3", "3.4", "3.5", "3.6", "5.1", "5.2", "5.3", "6.1", "6.2", "6.3"]
+    dir = "../3.6/"
+    version_list = ["donut"]# ["1.3", "2.1", "3.2", "3.3", "3.4", "3.5", "3.6", "5.1", "5.2", "5.3", "6.1", "6.2", "6.3"]
     for version in version_list:
         all_data = None
-        for i in range(5):
+        for i in range(6):
             cur_data = pd.read_csv(dir + version +  "/performance-" + version + "-" + str(i) + ".csv")
             cur_data.index = cur_data["file"]
             if all_data is None:

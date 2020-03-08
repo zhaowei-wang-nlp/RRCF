@@ -29,7 +29,6 @@ def compute_best_F1(ans_file, co_disp_file, reverse = False, mean_start = True):
     print()
 
     co_disp_data["anomaly"] = [1 if d < best_threshold else 0 for d in co_disps] if reverse else [1 if d > best_threshold else 0 for d in co_disps]
-    co_disp_data["anomaly"] = get_range_proba(co_disp_data["anomaly"], true_ans)
     co_disp_data.to_csv(co_disp_file, index = False)
     return best_F1, best_threshold, precision, recall
 
@@ -54,5 +53,5 @@ def compute_F1_dir(string, batch, batch_size, reverse = False, mean_start = True
         perform.to_csv(predict_dir + "performance-" + string + "-" + str(batch) + ".csv", index = False)
 if __name__ == "__main__":
     for i in range(6):
-        compute_F1_dir("donut", i, 5, reverse=True, mean_start=False)
+        compute_F1_dir("6.1", i, 5, reverse=False, mean_start=True)
 

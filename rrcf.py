@@ -28,7 +28,7 @@ class RRCF:
             trees = [RCTree(self.train_data[ix], index_labels=ix) for ix in ixs]
             self.forest.extend(trees)
 
-    def set_threshold(self):
+    def set_threshold(self, timestamp):
         co_disps = np.zeros(self.train_size)
         for i in range(self.train_size):
             co_disps[i] = self._get_codisp(self.train_data[i])
@@ -38,6 +38,30 @@ class RRCF:
         self.threshold = mean + 5 * std
         return co_disps
 
+    def our_threshold3(self, mean, std, score, timestamp):
+        period = int(24 * 60 / ((timestamp[1] - timestamp[0]) / 60))
+        threshold = mean + 2 * std
+        while threshold < mean + 6 * std:
+            predict = np.array([1 if s > threshold else 0 for s in score])
+            if predict.sum() > len(predict) * 0.15:
+                threshold += 0.3 * std
+            else:
+                break
+        while threshold < mean + 6 * std:
+            predict = np.array([1 if s > threshold else 0 for s in score])
+            hours = []
+            for i in range(len(score) // period):
+                hours.append(predict[i * period: i * period + period].sum())
+            hour_mean, hour_std = np.mean(hours), np.std(hours)
+            count = 0
+            for i in range(len(hours)):
+                if hours[i] > hour_mean + 3 * hour_std and hours[i] > 30:
+                    count += 1
+            if count < len(hours) // 3:
+                threshold += 0.3 * std
+            else:
+                break
+        return threshold
     def _check_anomaly(self, co_disp):
         if co_disp >= self.threshold:
             return 1
@@ -101,6 +125,8 @@ class RRCF:
         if start != -1:
             new_segs.append((start, end))
         return new_segs
+
+
     def select_points_top(self, file, timestamp):
         res = [score_index(self.co_disps[i], i) for i in range(len(self.co_disps))]
         res.sort(key=lambda x: x[0], reverse=True)
