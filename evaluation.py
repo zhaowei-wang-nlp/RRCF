@@ -1,13 +1,17 @@
 import numpy as np
 from sys import argv
-from sklearn.metrics import f1_score, precision_score, recall_score, precision_recall_curve
+from sklearn.metrics import f1_score, precision_score, recall_score
 from collections import Counter
 
 # consider delay threshold and missing segments
-def get_range_proba(predict, label, delay=7):
+def get_range_proba(predict, label, delay=10):
+    if len(predict) != len(label):
+        print("the length of ans is not the same")
+        return None
     splits = np.where(label[1:] != label[:-1])[0] + 1
     is_anomaly = label[0] == 1
     new_predict = np.array(predict)
+    predict = np.array(predict)
     pos = 0
 
     for sp in splits:
