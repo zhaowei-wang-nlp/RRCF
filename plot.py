@@ -23,12 +23,11 @@ def plot_points(file, result1, result2, version1, version2):
     r1["anomaly"] = get_range_proba(r1["anomaly"].values, data["anomaly"].values)
     r2["anomaly"] = get_range_proba(r2["anomaly"].values, data["anomaly"].values)
 
-    #print(file, f1_score(data["anomaly"].values[indicator], r1["upper_anomaly"].values[indicator]))
 
     plt.axvline(x=data.loc[0, "time"],ls="-",c="green")
     plt.axhline(y=np.median(data["value"].values), ls="-", c="purple")
     plt.scatter(data[r1["anomaly"] == 1]["time"], data[r1["anomaly"] == 1]["value"], c = "greenyellow", s = 80, label = version1)
-    # plt.scatter(data[r2["anomaly"] == 1]["time"], data[r2["anomaly"] == 1]["value"], c="black", s=50, label=version2)
+    #plt.scatter(data[r2["anomaly"] == 1]["time"], data[r2["anomaly"] == 1]["value"], c="black", s=50, label=version2)
     plt.legend()
     plt.subplot(2, 1, 2)
     plt.axvline(x=data.loc[0, "time"], ls="-", c="green")
@@ -38,14 +37,12 @@ def plot_points(file, result1, result2, version1, version2):
     co_disp = [0.0] * (len(data) - len(r1)) + co_disp
     plt.plot(data["time"].values, co_disp)
 
-    plt.show()
     plt.savefig("./contest_pic/" + file.split("/")[-1] + ".jpg")
-
 if __name__ == "__main__":
-    dir = "../3.5-不聚类/"
-    version1 = "6.1"
-    version2 = "6.1"
-    for file in ["da10a6.csv",]:# ["adb2fd.csv", "6a757d.csv", "42d661.csv", "da10a6.csv", "8723f0.csv", "6d1114.csv", "6efa3a.csv"]:#os.listdir("../contest_data/"):
+    dir = "../3.11/"
+    version1 = "IF"
+    version2 = "IF"
+    for file in os.listdir("../contest_data/"):
         plot_points("../contest_data/"+file,
                     dir + version1 + "/test-" + version1 + file,
                     dir + version2 + "/test-" + version2 + file, version1, version2)

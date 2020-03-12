@@ -7,7 +7,7 @@ from evaluation import label_evaluation
 REPEAT_TIMES = 1
 
 
-def RRCF_origin(use_src_dir, output):
+def IF_origin(use_src_dir, output):
     file_list = sorted([p for p in os.listdir(use_src_dir) if os.path.isfile(use_src_dir + p)])
     length = len(file_list)
     file_index = {file_list[i]:i for i in range(length)}
@@ -46,5 +46,5 @@ if __name__ == "__main__":
     output_dir =  use_src_dir[1:] + "IF/"
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
-    RRCF_origin(use_src_dir, output_dir)
+    IF_origin(use_src_dir, output_dir)
 

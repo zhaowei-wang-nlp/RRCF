@@ -20,4 +20,4 @@ def assert_parms():
     print("UPDATE_ANOMALY", UPDATE_ANOMALY)
     print("active learning", SELECT_POINT, FEEDBACK)
     assert SELECT_POINT in {"TOP", "MID", "RANDOM", "BUCKET", ""}
-    assert FEEDBACK in {"WEIGHT", "POINT", "BOTH", ""}
+    assert FEEDBACK in {"WEIGHT", "POINT", "BOTH", "ABNORMAL", ""}

@@ -5,54 +5,25 @@ from sklearn.ensemble import RandomForestClassifier
 import json
 import pickle
 from evaluation import label_evaluation
-REPEAT_TIMES = 5
-sim_data = pickle.load(open("./contest_data/similarity_dict.dat", "rb"))
+REPEAT_TIMES = 1
 
-def find_nearest(cluster: list) -> str:
-    cluster = [c[:-4] for c in cluster if c[-4:] == ".csv"]
-    sum = {c : 0 for c in cluster}
-    for c1 in cluster:
-        for c2 in cluster:
-            sum[c1] += sim_data[c1][c2][0]
-
-    max, res = None, None
-    for c1 in cluster:
-        if max is None or sum[c1] > max:
-            max, res = sum[c1], c1
-    return res + '.csv'
 def Random_Forest(use_src_dir, output, type = "full", label_type = None):
     # read clusters' info
-    clusters = json.load(open("./contest_data/file_clusters.txt", "r"))
-    clusters = {int(n):clusters[n] for n in clusters}
 
     file_list = sorted([p for p in os.listdir(use_src_dir) if os.path.isfile(use_src_dir+p)])
     length = len(file_list)
     file_index = {file_list[i]: i for i in range(length)}
 
-    cluster_index = [0.0] * length
-    for cn in clusters:
-        for file in clusters[cn]:
-            cluster_index[file_index[file]] = cn
-
-    perform = pd.DataFrame({"file": file_list, "cluster": cluster_index, "recall": [0.0] * length, "precision": [0.0] * length, "F1-score": [0.0] * length,
+    perform = pd.DataFrame({"file": file_list, "recall": [0.0] * length, "precision": [0.0] * length, "F1-score": [0.0] * length,
          "storage": [0.0] * length, "train-time": [0.0] * length, "test-time": [0.0] * length})
 
-    for cnumber in clusters:
-        c = clusters[cnumber]
-        central = find_nearest(c)
-        print(str(cnumber) + "cluster test begin.")
-        train_f, train_tag, train_time = \
-        preprocess(use_src_dir, central, 0.5, 0.5)[:3]
+    for file in file_list:
+        print(file + " test begin.")
+        train_f, train_tag, train_time, test_f, test_tag, test_time = preprocess(use_src_dir, file, 0.5, 0.5)
 
         if type == "part":
-            indices = pd.read_csv("./active/" + label_type + "/" + central)["indices"].values
+            indices = pd.read_csv("./active/" + label_type + "/" + file)["indices"].values
             train_f, train_tag, train_time = train_f[indices], train_tag[indices], train_time[indices]
-
-        f_dict, tag_dict, time_dict = {}, {}, {}
-        best_performance = {}
-        for f in c:
-            f_dict[f], tag_dict[f], time_dict[f] = preprocess(use_src_dir, f)[3:]
-            best_performance[f] = -1
 
         for j in range(REPEAT_TIMES):
 
@@ -62,28 +33,25 @@ def Random_Forest(use_src_dir, output, type = "full", label_type = None):
             a.fit(X= train_f, y = train_tag)
             end = time.time()
             tt = end - start
-            perform.loc[file_index[central], "train-time"] += tt
+            perform.loc[file_index[file], "train-time"] += tt
 
-            perform.loc[file_index[central], "storage"] += get_size(a)
+            perform.loc[file_index[file], "storage"] += get_size(a)
 
             print("testing")
-            for f in c:
-                start = time.time()
-                predict = a.predict(f_dict[f])
-                end = time.time()
-                perform.loc[file_index[f], "test-time"] += end - start
+            start = time.time()
+            predict = a.predict(test_f)
+            end = time.time()
+            perform.loc[file_index[file], "test-time"] += end - start
 
-                data = label_evaluation(predict, tag_dict[f])
-                if data["F1-score"] > best_performance[f]:
-                    best_performance[f] = data["F1-score"]
-                    pd.DataFrame({"timestamp": time_dict[f], "anomaly": predict}).to_csv(output + "test-" + f, index=False)
+            data = label_evaluation(predict, test_tag)
+            pd.DataFrame({"timestamp": test_time, "anomaly": predict}).to_csv(output + "test-" + file, index=False)
 
-                perform.loc[file_index[f], "F1-score"] += data["F1-score"]
-                perform.loc[file_index[f], "recall"] += data["recall"]
-                perform.loc[file_index[f], "precision"] += data["precision"]
-                print(data)
-    perform.iloc[:, 2:] /= REPEAT_TIMES
-    perform.to_csv(output + "performance" + ".csv", index = False)
+            perform.loc[file_index[file], "F1-score"] += data["F1-score"]
+            perform.loc[file_index[file], "recall"] += data["recall"]
+            perform.loc[file_index[file], "precision"] += data["precision"]
+    perform.iloc[:, 1:] /= REPEAT_TIMES
+    name = "RF" if type == "part" else "full-RF"
+    perform.to_csv(output + "performance-" + name + ".csv", index = False)
 
 
 if __name__ == "__main__":
@@ -91,4 +59,4 @@ if __name__ == "__main__":
     output_dir =  use_src_dir[1:] + "RF/"
     if not os.path.exists(output_dir + "/"):
         os.mkdir(output_dir + "/")
-    Random_Forest(use_src_dir, output_dir, type = "part", label_type= "TOP_WEIGHT")
+    Random_Forest(use_src_dir, output_dir, type = "part", label_type= "6.1")

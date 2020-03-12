@@ -16,8 +16,8 @@ def compute_best_F1(ans_file, co_disp_file, reverse = False, mean_start = True):
         print("the length of ans is not the same")
     best_F1, best_threshold, precision, recall = None, None, None, None
     start, end = np.mean(co_disps) if mean_start else np.min(co_disps), np.max(co_disps)
-    step, cur_threshold = (end - start)/200, start
-    for i in range(200):
+    step, cur_threshold = (end - start)/400, start
+    for i in range(400):
         if i % 50 == 0:
             print(i, end=" ")
         predict_ans = [1 if d < cur_threshold else 0 for d in co_disps] if reverse else [1 if d > cur_threshold else 0 for d in co_disps]
@@ -32,7 +32,7 @@ def compute_best_F1(ans_file, co_disp_file, reverse = False, mean_start = True):
     co_disp_data.to_csv(co_disp_file, index = False)
     return best_F1, best_threshold, precision, recall
 
-def compute_F1_dir(string, batch, batch_size, reverse = False, mean_start = True):
+def compute_F1_batch_dir(string, batch, batch_size, reverse = False, mean_start = True):
     print("start testing" + string)
     true_dir = "../contest_data/"
     predict_dir = "./contest_data/" + string + "/"
@@ -51,7 +51,25 @@ def compute_F1_dir(string, batch, batch_size, reverse = False, mean_start = True
         perform.loc[file, "precision"] = precision
         perform.loc[file, "recall"] = recall
         perform.to_csv(predict_dir + "performance-" + string + "-" + str(batch) + ".csv", index = False)
+
+def compute_F1_dir(string, reverse = False, mean_start = True):
+    print("start testing" + string)
+    true_dir = "../contest_data/"
+    predict_dir = "./contest_data/" + string + "/"
+    perform = pd.read_csv(predict_dir + "performance-" + string + ".csv")
+    perform.index = perform["file"]
+    perform["precision"] = [None] * len(perform)
+    perform["recall"] = [None] * len(perform)
+    perform["best-F1"] = [None] * len(perform)
+    perform["best-threshold"] = [None] * len(perform)
+    file_list = sorted([p for p in os.listdir(true_dir) if os.path.isfile(true_dir + p)])
+    for file in file_list:
+        best_F1, best_threshold, precision, recall = compute_best_F1(true_dir + file, predict_dir + "test-IF" + file, reverse=reverse, mean_start=mean_start)
+        perform.loc[file, "best-F1"] = best_F1
+        perform.loc[file, "best-threshold"] = best_threshold
+        perform.loc[file, "precision"] = precision
+        perform.loc[file, "recall"] = recall
+        perform.to_csv(predict_dir + "performance-" + string + ".csv", index = False)
 if __name__ == "__main__":
-    for i in range(6):
-        compute_F1_dir("6.1", i, 5, reverse=False, mean_start=True)
+    compute_F1_dir("IF", reverse=True, mean_start=False)
 

@@ -46,5 +46,4 @@ if __name__ == "__main__":
         cur_threshold += step
     data["sieve"] = best_label
     data.to_csv("../3.6/6.1/0test-6.1" + file, index = False)
-    print()
     print(best_F1, precision, recall, best_threshold)

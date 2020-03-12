@@ -5,7 +5,7 @@ import time
 from rrcf import RRCF
 import pickle
 from bestF1 import compute_F1_dir, compute_best_F1
-REPEAT_TIMES = 1
+REPEAT_TIMES = 5
 import json
 sim_data = None
 def find_nearest(cluster):
@@ -112,8 +112,6 @@ def RRCF_cluster_test(use_src_dir, output):
 
 def RRCF_test(use_src_dir, output, batch, batch_size):
     file_list = sorted([p for p in os.listdir(use_src_dir) if os.path.isfile(use_src_dir + p)])
-    # TODO RECOVER
-    file_list = ["da10a6.csv"]#["adb2fd.csv", "6a757d.csv", "42d661.csv", "da10a6.csv", "8723f0.csv", "6d1114.csv", "6efa3a.csv"]
     file_list = file_list[batch_size * batch: min(batch_size * batch + batch_size, len(file_list))]
     length = len(file_list)
     file_index = {file_list[i]:i for i in range(length)}
@@ -127,7 +125,7 @@ def RRCF_test(use_src_dir, output, batch, batch_size):
     for file in file_list:
         train_f, train_tag, train_time, test_f, test_tag, test_time = preprocess(use_src_dir, file, 0.5, 0.5)
         print(file+" test begin.")
-
+        best_perform = -1
         for j in range(REPEAT_TIMES):
 
             print(str(j) + " times test. training ", end="")
@@ -137,13 +135,13 @@ def RRCF_test(use_src_dir, output, batch, batch_size):
             a.fit(X = train_f)
             end = time.time()
             tt = end - start
-            perform.loc[file_index[file], "train-time"] += tt
+            perform.loc[file_index[file], "train-time"] = tt
 
             start = time.time()
-            train_codisp = a.set_threshold(train_time)# TODO RECOVER
+            train_codisp = a.set_threshold()
             end = time.time()
             tt += end - start
-            perform.loc[file_index[file], "codisp-time"] += tt
+            perform.loc[file_index[file], "codisp-time"] = tt
 
             if st.SELECT_POINT == "TOP":
                 a.select_points_top(st.STRING + "/" + file, train_time)
@@ -153,10 +151,13 @@ def RRCF_test(use_src_dir, output, batch, batch_size):
                 a.select_points_randomly(st.STRING + "/" + file, train_time)
             elif st.SELECT_POINT == "BUCKET":
                 a.select_points_bucket(st.STRING + "/" + file, train_time)
+            
             if st.FEEDBACK == "WEIGHT":
                 a.update_tree_weight(st.STRING + "/" + file, train_tag)
             elif st.FEEDBACK == "POINT":
                 a.insert_more_normal(st.STRING + "/" + file, train_tag)
+            elif st.FEEDBACK == "ABNORMAL":
+                a.insert_abnormal(st.STRING + "/" + file, train_tag)
             elif st.FEEDBACK == "BOTH":
                 a.update_tree_weight(st.STRING + "/" + file, train_tag)
                 a.insert_more_normal(st.STRING + "/" + file, train_tag)
@@ -165,22 +166,19 @@ def RRCF_test(use_src_dir, output, batch, batch_size):
             start = time.time()
             codisp = a.predict(test_f)
             end = time.time()
-            perform.loc[file_index[file], "test-time"] += end - start
-            perform.loc[file_index[file], "storage"] += get_size(a)
-            pd.DataFrame({"timestamp": test_time, "score": codisp}).to_csv(output + str(j) + "test-week_diff_no_diff12-da10a6.csv" , index=False)
-            pd.DataFrame({"timestamp": train_time, "score": train_codisp}).to_csv(output + str(j) + "train-week_diff_no_diff12-da10a6.csv" , index=False)
-            best_F1, best_threshold, precision, recall = compute_best_F1(use_src_dir + file, output + str(j) + "test-week_diff_no_diff12-da10a6.csv" )
-            #pd.DataFrame({"timestamp": test_time, "score":codisp}).to_csv(output + str(j) + "test-" + st.STRING + file, index= False)# TODO RECOVER
-            #pd.DataFrame({"timestamp": train_time, "score": train_codisp}).to_csv(output + str(j) + "train-" + st.STRING  + file, index=False)# TODO RECOVER
-            # best_F1, best_threshold, precision, recall = compute_best_F1(use_src_dir + file, output + str(j) + "test-" + st.STRING + file) # TODO RECOVER
-            perform.loc[file_index[file], "best-F1"] += best_F1
-            perform.loc[file_index[file], "best-threshold"] += best_threshold
-            perform.loc[file_index[file], "precision"] += precision
-            perform.loc[file_index[file], "recall"] += recall
-        perform.iloc[file_index[file], 1:] /= REPEAT_TIMES
-        #TODO RECOVER
-        perform.to_csv(output + "performance-week_diff_no_diff12-da10a6.csv" + ".csv", index=False)
-        # perform.to_csv(output + "performance-" + st.STRING + "-" + str(batch) + ".csv", index = False)
+            perform.loc[file_index[file], "test-time"] = end - start
+            perform.loc[file_index[file], "storage"] = get_size(a)
+
+            pd.DataFrame({"timestamp": test_time, "score": codisp}).to_csv(output + "test-" + st.STRING + file, index=False)
+            pd.DataFrame({"timestamp": train_time, "score": train_codisp}).to_csv(output + "train-" + st.STRING + file, index=False)
+            best_F1, best_threshold, precision, recall = compute_best_F1(use_src_dir + file, output + "test-" + st.STRING + file)
+            if best_F1 > best_perform:
+                best_perform = best_F1
+                perform.loc[file_index[file], "best-F1"] = best_F1
+                perform.loc[file_index[file], "best-threshold"] = best_threshold
+                perform.loc[file_index[file], "precision"] = precision
+                perform.loc[file_index[file], "recall"] = recall
+        perform.to_csv(output + "performance-" + st.STRING + "-" + str(batch) + ".csv", index = False)
 
 
 if __name__ == "__main__":
@@ -220,6 +218,8 @@ if __name__ == "__main__":
             st.STRING, st.FEEDBACK = "5.2", "POINT"
         elif version == 53:
             st.STRING, st.FEEDBACK = "5.3", "BOTH"
+        elif version == 54:
+            st.STRING, st.FEEDBACK = "5.4", "ABNORMAL"
     elif version >= 60:
         st.OUR_FEATURE = st.DATA_ANALYSIS = st.FEATURE_SELECT = st.CUT_SELECT = st.CODISP_DEPTH = st.UPDATE_ANOMALY = True
         st.UPDATE_ALL = False

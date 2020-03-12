@@ -14,7 +14,7 @@ class RRCF:
     def __init__(self, tree_num, tree_size):
         self.tree_size = tree_size
         self.tree_num = tree_num
-        self.weight = [1.0] * self.tree_num
+        self.weight = [1.0/self.tree_num] * self.tree_num
 
     def fit(self, X):
         self.train_data = X
@@ -28,7 +28,7 @@ class RRCF:
             trees = [RCTree(self.train_data[ix], index_labels=ix) for ix in ixs]
             self.forest.extend(trees)
 
-    def set_threshold(self, timestamp):
+    def set_threshold(self):
         co_disps = np.zeros(self.train_size)
         for i in range(self.train_size):
             co_disps[i] = self._get_codisp(self.train_data[i])
@@ -86,7 +86,17 @@ class RRCF:
         return co_disp
 
     def select_points_randomly(self, file, timestamp):
-        indices = np.random.choice(self.train_size, size=3000, replace=True)
+        indices = []
+        length, start = 0, None
+        for i in range(self.train_size):
+            if self.co_disps[i] >= self.threshold:
+                if not length:
+                    start = i
+                length += 1
+            else:
+                if length > 100:
+                    indices += list(range(start, i))
+                length = 0
         pd.DataFrame({"timestamp": timestamp[indices], "indices": indices}).to_csv("active/" + file, index=False)
 
     def find_segs(self, res, high, num = 30, other_segs = None):
@@ -160,23 +170,40 @@ class RRCF:
 
         self.weight = np.zeros(self.tree_num)
         for index in indices:
-            if y[index]:
-                point = self.train_data[index]
-                for i in range(self.tree_num):
-                    tree = self.forest[i]
-                    nearest_leaf = tree.query(point)
-                    self.weight[i] += tree.codisp(nearest_leaf)
+            point = self.train_data[index]
+            for i in range(self.tree_num):
+                tree = self.forest[i]
+                nearest_leaf = tree.query(point)
+                x = tree.codisp(nearest_leaf)
+                self.weight[i] += x if y[index] else -x
+        self.weight -= min(self.weight)
         if self.weight.sum() != 0:
             self.weight /= self.weight.sum()
-            self.weight *= self.tree_num
         else:
-            self.weight = [1.0] * self.tree_num
+            self.weight = [1.0/self.tree_num] * self.tree_num
 
     def insert_more_normal(self, file, y):
-        indices = pd.read_csv("active/" + file)["indices"]
+        indices = pd.read_csv("active/" + file)["indices"].values
         i = 0
+        print(y[indices].sum())
         for index in indices:
             if not y[index]:
+                point = self.train_data[index]
+                ins_cnt, tr_cnt = 0, 0
+                while ins_cnt < 5 and tr_cnt < self.tree_num:
+                    tree = self.forest[i]
+                    if index not in tree.leaves:
+                        tree.insert_point(point, index)
+                        ins_cnt += 1
+                    tr_cnt += 1
+                    i = (i + 1) % self.tree_num
+
+    def insert_abnormal(self, file, y):
+        indices = pd.read_csv("active/" + file)["indices"].values
+        i = 0
+        print(y[indices].sum())
+        for index in indices:
+            if y[index]:
                 point = self.train_data[index]
                 ins_cnt, tr_cnt = 0, 0
                 while ins_cnt < 5 and tr_cnt < self.tree_num:

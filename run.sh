@@ -1,13 +1,4 @@
-python3 test.py 1.3 $1 $2 &
-python3 test.py 2.1 $1 $2 &
-python3 test.py 3.2 $1 $2 &
-python3 test.py 3.3 $1 $2 &
-python3 test.py 3.4 $1 $2 &
-python3 test.py 3.5 $1 $2 &
-python3 test.py 3.6 $1 $2 &
-python3 test.py 5.1 $1 $2 &
-python3 test.py 5.2 $1 $2 &
-python3 test.py 5.3 $1 $2 &
-python3 test.py 6.1 $1 $2 &
-python3 test.py 6.2 $1 $2 &
-python3 test.py 6.3 $1 $2 &
+for i in $( seq 15 28 )
+do
+python3 test.py $1 $i 1 &
+done
